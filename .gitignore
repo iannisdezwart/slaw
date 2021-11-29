@@ -1,1 +1,5 @@
 mem_test
+test/mem_allocator
+test/vector
+test/wasm_test.wasm
+.vscode/

@@ -1,7 +1,11 @@
-#include <bits/stdc++.h>
+#include <iostream>
+#include <string>
+#include <utility>
 #include <stdio.h>
-#include "types.hpp"
-#include "mem.hpp"
+#include <vector>
+#include "../types.hpp"
+#include "../mem.hpp"
+#include "virtual_heap.hpp"
 
 u8 __heap_base; // We don't touch this.
 u8 *heap;
@@ -15,9 +19,12 @@ debug()
 	printf("\nBlocks:\n\n");
 
 	auto block = (slaw::mem::HeapBlockHeader *) heap;
+	std::vector<int> a;
+	a.begin();
 
 	while ((u8 *) block < slaw::mem::heap_end)
 	{
+		std::move(block);
 		if (block->is_free())
 		{
 			printf("[free]\n");
@@ -29,9 +36,19 @@ debug()
 
 		printf("block = %p\n", block);
 		printf("size  = %d\n", block->size);
+		printf("prev  = %p\n", block->prev_block);
 		printf("start = %p\n", block->get_start_ptr());
 		printf("end   = %p\n", block->get_end_ptr());
 		printf("off   = %lu\n", (u8 *) block - heap);
+
+		if (block->is_free())
+		{
+			auto *free_block = (slaw::mem::FreeHeapBlockHeader *)
+				block;
+			printf("next_free = %p\n", free_block->next_free_block);
+			printf("prev_free = %p\n", free_block->prev_free_block);
+		}
+
 		printf("\n");
 
 		block = (slaw::mem::HeapBlockHeader *) ((char *) block + sizeof(slaw::mem::HeapBlockHeader) + block->size);
@@ -42,8 +59,7 @@ debug()
 
 int main()
 {
-	heap = new u8[1024 * 1024];
-	slaw::mem::heap_end = heap;
+	heap = create_heap(1024 * 1024);
 
 	std::string line;
 
@@ -83,58 +99,6 @@ int main()
 			}
 		}
 	}
-
-	// printf("heap = %p\n", heap);
-
-	// debug();
-
-	// printf("allocating 100 bytes for a\n");
-
-	// void *a = slaw::mem::alloc(100);
-	// debug();
-
-	// printf("allocating 200 bytes for b\n");
-
-	// void *b = slaw::mem::alloc(200);
-	// debug();
-
-	// printf("allocating 300 bytes for c\n");
-
-	// void *c = slaw::mem::alloc(300);
-	// debug();
-
-	// printf("freeing a\n");
-
-	// slaw::mem::free(a);
-	// debug();
-
-	// printf("allocating 50 bytes for d\n");
-
-	// void *d = slaw::mem::alloc(50);
-	// debug();
-
-	// printf("allocating 34 bytes for e\n");
-
-	// void *e = slaw::mem::alloc(34);
-	// debug();
-
-	// printf("freeing d\n");
-
-	// slaw::mem::free(d);
-	// debug();
-
-	// printf("freeing e\n");
-
-	// slaw::mem::free(e);
-	// debug();
-
-	// printf("freeing c\n");
-
-	// slaw::mem::free(c);
-	// debug();
-
-	// slaw::mem::free(b);
-	// debug();
 
 	delete heap;
 }

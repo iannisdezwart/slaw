@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>WASM Test</title>
+
+		<script>
+			const main = async () => {
+				const req = await fetch('main.wasm')
+				const data = await req.arrayBuffer()
+				const wasm = await WebAssembly.instantiate(data, {
+					env: {
+						memory: new WebAssembly.Memory({
+							initial: 256,
+							maximum: 256
+						})
+					}
+				})
+
+				this.wasm = wasm
+			}
+
+			main()
+		</script>
+	</head>
+	<body>
+		<h1>WASM Test</h1>
+	</body>
+</html>
