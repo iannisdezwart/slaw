@@ -1,3 +1,6 @@
+#ifndef SLAW_MEM_H
+#define SLAW_MEM_H
+
 #include "types.hpp"
 
 /**
@@ -520,7 +523,7 @@ free(void *ptr)
 	// It is guaranteed that there is a free block both before it
 	// and after it. We will have to search the previous free block.
 
-	HeapBlockHeader *search = block;
+	HeapBlockHeader *search = block->prev_block;
 
 	while (!search->is_free())
 	{
@@ -534,7 +537,15 @@ free(void *ptr)
 	block->prev_free_block = prev_free_block;
 	block->next_free_block = prev_free_block->next_free_block;
 
-	prev_free_block->next_free_block->prev_free_block = block;
+	// We have to check if the next block exists, because it might not.
+	// If it does exist, we set the previous pointer of the next block
+	// to the new free block.
+
+	if (prev_free_block->next_free_block)
+	{
+		prev_free_block->next_free_block->prev_free_block = block;
+	}
+
 	prev_free_block->next_free_block = block;
 
 	// Check if we can merge anything.
@@ -542,3 +553,59 @@ free(void *ptr)
 	maybe_merge_free_blocks(block);
 }
 }; // namespace slaw::mem
+
+/**
+ * @brief Dynamically allocates memory on the heap.
+ *
+ * @param size The number of bytes to allocate.
+ * @returns A pointer to the allocated block.
+ * This pointer must be `delete`d at some point,
+ * or memory leaks will occur.
+ */
+void *
+operator new(usize size)
+{
+	return slaw::mem::alloc(size);
+}
+
+/**
+ * @brief Dynamically allocates an array on the heap.
+ *
+ * @param size The number of elements to allocate.
+ * @returns A pointer to the allocated array.
+ * This pointer must be `delete[]`d at some point,
+ * or memory leaks will occur.
+ */
+void *
+operator new[](usize size)
+{
+	return slaw::mem::alloc(size);
+}
+
+/**
+ * @brief Frees memory on the heap.
+ *
+ * @param ptr The pointer to the block to free.
+ * This must be a pointer returned by the `new` operator.
+ */
+void
+operator delete(void *ptr)
+noexcept
+{
+	slaw::mem::free(ptr);
+}
+
+/**
+ * @brief Frees an array on the heap.
+ *
+ * @param ptr The pointer to the array to free.
+ * This must be a pointer returned by the `new[]` operator.
+ */
+void
+operator delete[](void *ptr)
+noexcept
+{
+	slaw::mem::free(ptr);
+}
+
+#endif
