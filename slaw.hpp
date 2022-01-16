@@ -6,5 +6,6 @@
 #include "types.hpp"
 #include "util.hpp"
 #include "vector.hpp"
+#include "string.hpp"
 
 #endif

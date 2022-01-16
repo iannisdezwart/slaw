@@ -38,6 +38,7 @@ struct Vector
 
 	/**
 	 * Constructs a new vector of a given initial size.
+	 *
 	 * - Time complexity: O(1).
 	 * - Space complexity: O(1).
 	 */
@@ -47,6 +48,7 @@ struct Vector
 	/**
 	 * Constructs a new vector by taking a copy of an existing vector.
 	 * The new vector will have the same size and capacity as the source.
+	 *
 	 * - Time complexity: O(n).
 	 * - Space complexity: O(1).
 	 */
@@ -65,6 +67,7 @@ struct Vector
 	/**
 	 * Constructs a new vector by moving an existing vector.
 	 * The new vector will have the same size and capacity as the source.
+	 *
 	 * The source vector will be emptied.
 	 * - Time complexity: O(1).
 	 * - Space complexity: O(1).
@@ -83,6 +86,7 @@ struct Vector
 	 * Copies a new vector into this vector.
 	 * The new vector will have the same size and capacity as the source.
 	 * The original vector elements will be overwritten.
+	 *
 	 * - Time complexity: O(n).
 	 * - Space complexity: O(1).
 	 */
@@ -121,6 +125,7 @@ struct Vector
 	 * The new vector will have the same size and capacity as the original.
 	 * The source vector will be emptied and the original vector elements
 	 * will be overwritten.
+	 *
 	 * - Time complexity: O(1).
 	 * - Space complexity: O(1).
 	 */
@@ -156,6 +161,7 @@ struct Vector
 	/**
 	 * Destructs the vector.
 	 * Frees the internal array used by the vector.
+	 *
 	 * - Time complexity: O(1).
 	 * - Space complexity: O(1).
 	 */
@@ -403,6 +409,121 @@ struct Vector
 		{
 			data[size++] = vector[i];
 		}
+	}
+
+	/**
+	 * Deletes all elements from the vector.
+	 * The size and capacity are reset to 0.
+	 *
+	 * - Time complexity: O(1).
+	 * - Space complexity: O(1).
+	 */
+	void
+	clear()
+	{
+		// Reset the size and capacity.
+
+		size = 0;
+		capacity = 0;
+
+		// Free the array.
+
+		delete[] data;
+		data = nullptr;
+	}
+
+	/**
+	 * Returns the index of the first occurrence of a given element.
+	 * Returns -1 if the element is not found.
+	 * The vector will be searched from the provided index, or from
+	 * the beginning of the vector if no index is provided.
+	 *
+	 * - Time complexity: O(n).
+	 * - Space complexity: O(1).
+	 */
+	isize
+	index_of(const T &element, usize index = 0) const
+	{
+		// Find the index of the element.
+
+		for (isize i = index; i < size; i++)
+		{
+			if (data[i] == element)
+			{
+				return i;
+			}
+		}
+
+		return -1;
+	}
+
+	/**
+	 * Checks if the vector contains a given element.
+	 *
+	 * - Time complexity: O(n).
+	 * - Space complexity: O(1).
+	 */
+	bool
+	contains(const T &element) const
+	{
+		// Find the element.
+
+		for (isize i = 0; i < size; i++)
+		{
+			if (data[i] == element)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Checks if the vector contains a given sequence of elements.
+	 *
+	 * - Time complexity: O(n).
+	 * - Space complexity: O(1).
+	 */
+	bool
+	contains(const Vector<T> &sequence) const
+	{
+		// Check if the sequence is empty.
+
+		if (sequence.size == 0)
+		{
+			return true;
+		}
+
+		// Check if the sequence is longer than the vector.
+
+		if (sequence.size > size)
+		{
+			return false;
+		}
+
+		// Check if the sequence is contained in the vector.
+
+		for (usize i = 0; i < size - sequence.size + 1; i++)
+		{
+			bool found = true;
+
+			for (usize j = 0; j < sequence.size; j++)
+			{
+				if (data[i + j] != sequence[j])
+				{
+					found = false;
+					break;
+				}
+			}
+
+			if (found)
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
