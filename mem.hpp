@@ -122,6 +122,23 @@ struct HeapBlockHeader
 	}
 };
 
+// We have to forward declare the FreeHeapBlockHeader so we can use the
+// `first_free_block` inside the FreeHeapBlockHeader struct.
+struct FreeHeapBlockHeader;
+
+// Holds a pointer to the current end of the heap.
+// This pointer can be increased if there is not enough space on the heap
+// to allocate block of certain size.
+u8 *heap_end = &__heap_base;
+
+// Holds a pointer to the first free block.
+// Is null if there is no free block.
+FreeHeapBlockHeader *first_free_block = nullptr;
+
+// Holds a pointer to the last block.
+// Is null if there are no blocks.
+HeapBlockHeader *last_block = nullptr;
+
 /**
  * Structure of a free memory block header.
  * Inherits from `HeapBlockHeader`.
@@ -147,10 +164,18 @@ struct FreeHeapBlockHeader : public HeapBlockHeader
 	/**
 	 * @brief Removes this block from the free list.
 	 * The previous and next free blocks are updated accordingly.
+	 * If this happens to be the only free block, `first_free_block`
+	 * is set to nullptr.
 	 */
 	inline void
 	remove_from_free_block_list()
 	{
+		if (prev_free_block == nullptr && next_free_block == nullptr)
+		{
+			first_free_block = nullptr;
+			return;
+		}
+
 		if (prev_free_block)
 		{
 			prev_free_block->next_free_block = next_free_block;
@@ -162,19 +187,6 @@ struct FreeHeapBlockHeader : public HeapBlockHeader
 		}
 	}
 };
-
-// Holds a pointer to the current end of the heap.
-// This pointer can be increased if there is not enough space on the heap
-// to allocate block of certain size.
-u8 *heap_end = &__heap_base;
-
-// Holds a pointer to the first free block.
-// Is null if there is no free block.
-FreeHeapBlockHeader *first_free_block = nullptr;
-
-// Holds a pointer to the last block.
-// Is null if there are no blocks.
-HeapBlockHeader *last_block = nullptr;
 
 /**
  * @brief Allocates memory at the end of the heap.
@@ -499,11 +511,11 @@ free(void *ptr)
 		// If the previous block is free, we will discard both
 		// blocks and shrink the heap by these two blocks.
 
-		if (block->prev_block != nullptr && block->is_free())
-		{
-			FreeHeapBlockHeader *prev_block =
-				(FreeHeapBlockHeader *) block->prev_block;
+		FreeHeapBlockHeader *prev_block =
+			(FreeHeapBlockHeader *) block->prev_block;
 
+		if (prev_block != nullptr && prev_block->is_free())
+		{
 			prev_block->remove_from_free_block_list();
 			heap_end = (u8 *) prev_block;
 		}
