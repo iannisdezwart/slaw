@@ -21,6 +21,8 @@
 							const pagesDiff = newPages - curPages
 
 							wasm.instance.exports.memory.grow(pagesDiff)
+
+							return newPages * 65536
 						}
 					}
 				})

@@ -60,3 +60,10 @@ get_heap_end()
 {
 	return slaw::mem::heap_end;
 }
+
+EXPORT("get_program_break")
+u8 *
+get_program_break()
+{
+	return slaw::mem::program_break;
+}
