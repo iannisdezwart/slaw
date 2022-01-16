@@ -28,8 +28,22 @@ extern "C"
 // the start of the heap memory section.
 // The heap grows upwards and we can grow it as much as we want.
 extern u8 __heap_base;
+
+/**
+ * JavaScript function that adjusts the program break.
+ * This function is used to request more memory for the heap if needed.
+ * Takes in the number of missing bytes as an argument.
+ * Returns a pointer to the new program break.
+ * Since WebAssembly memory works in pages, this new program break is aligned on
+ * the smallest multiple of the page size (65536) that fits the current size
+ * of the heap plus the missing memory.
+ */
+extern u8 *
+brk(usize extra_mem);
 };
 
+constexpr const usize PAGE_SIZE = 65536;
+constexpr const usize INITIAL_PAGES = 2;
 
 /**
  * Structure of a memory block header.
@@ -131,6 +145,12 @@ struct FreeHeapBlockHeader;
 // to allocate block of certain size.
 u8 *heap_end = &__heap_base;
 
+// Holds a pointer to the current program break.
+// This pointer denotes the end of the heap.
+// If more memory is needed, the program break must be increased.
+// This is done on the JavaScript side.
+u8 *program_break = (u8 *) (PAGE_SIZE * INITIAL_PAGES);
+
 // Holds a pointer to the first free block.
 // Is null if there is no free block.
 FreeHeapBlockHeader *first_free_block = nullptr;
@@ -191,6 +211,7 @@ struct FreeHeapBlockHeader : public HeapBlockHeader
 /**
  * @brief Allocates memory at the end of the heap.
  * The heap_end pointer is increased by the size of the full block.
+ * The program break is increased on the JavaScript side if necessary.
  * This function is useful when we want to allocate a block of memory
  * quickly. It is also used internally by the `slaw::mem::alloc` function
  * if there is no free block that would fit the requested size.
@@ -209,6 +230,15 @@ alloc_end(usize size)
 	// The full block contains the header and the inner size.
 
 	heap_end += sizeof(HeapBlockHeader) + size;
+
+	// Increment the program break if necessary.
+
+	if (heap_end >= program_break)
+	{
+		// Request the amount of missing memory.
+
+		program_break = brk(heap_end - program_break);
+	}
 
 	// Set the size of the block.
 

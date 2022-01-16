@@ -6,15 +6,22 @@
 		<title>WASM Test</title>
 
 		<script>
-			const main = async () => {
+			const main = async () =>
+			{
 				const req = await fetch('main.wasm')
 				const data = await req.arrayBuffer()
 				const wasm = await WebAssembly.instantiate(data, {
 					env: {
-						memory: new WebAssembly.Memory({
-							initial: 256,
-							maximum: 256
-						})
+						brk(n)
+						{
+							const curSize = wasm.instance.exports.memory.buffer.byteLength
+							const newSize = curSize + n
+							const curPages = curSize / 65536
+							const newPages = Math.ceil(newSize / 65536)
+							const pagesDiff = newPages - curPages
+
+							wasm.instance.exports.memory.grow(pagesDiff)
+						}
 					}
 				})
 

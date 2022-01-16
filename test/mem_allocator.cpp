@@ -19,8 +19,6 @@ debug()
 	printf("\nBlocks:\n\n");
 
 	auto block = (slaw::mem::HeapBlockHeader *) heap;
-	std::vector<int> a;
-	a.begin();
 
 	while ((u8 *) block < slaw::mem::heap_end)
 	{

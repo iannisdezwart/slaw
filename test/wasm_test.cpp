@@ -32,3 +32,31 @@ sum_0_to_n(usize n)
 {
 	return sum(create_arr(n));
 }
+
+EXPORT("mem_at")
+u8
+mem_at(u8 *n)
+{
+	return *n;
+}
+
+EXPORT("allocate")
+u8 *
+allocate(usize size)
+{
+	u8 *mem = new u8[size];
+
+	for (usize i = 0; i < size; i++)
+	{
+		mem[i] = i;
+	}
+
+	return mem;
+}
+
+EXPORT("get_heap_end")
+u8 *
+get_heap_end()
+{
+	return slaw::mem::heap_end;
+}
