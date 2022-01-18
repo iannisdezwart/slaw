@@ -78,6 +78,37 @@ max(T a, T b)
 }
 
 /**
+ * Returns the absolute value of a number.
+ */
+template <typename T>
+constexpr inline T
+abs(T n)
+{
+	if constexpr (is_unsigned<T>())
+	{
+		// If the type is unsigned, just return the value.
+
+		return n;
+	}
+
+	// If the type is signed, we return the absolute value.
+
+	// This doesn't have to be optimised further, because the compiler
+	// will optimise this as much as possible.
+	// I tested a couple of different implementation for the `abs` function
+	// on Godbolt's compiler explorer, and all of them were optimised to
+	// the same WASM code when using `-O1` or higher.
+	// https://godbolt.org/z/fsjYvr6db
+
+	if (n < 0)
+	{
+		return -n;
+	}
+
+	return n;
+}
+
+/**
  * Swaps two values.
  */
 template <typename T>
