@@ -12,8 +12,8 @@ typedef unsigned char u8;
 typedef signed char i8;
 typedef unsigned short u16;
 typedef signed short i16;
-typedef unsigned long u32;
-typedef signed long i32;
+typedef unsigned int u32;
+typedef signed int i32;
 typedef unsigned long long u64;
 typedef signed long long i64;
 
@@ -52,6 +52,9 @@ struct is_same_helper<T, T>
 {
 	static const bool value = true;
 };
+
+// A huge value which can be used to represent infinity.
+const constexpr double huge_value = 1e10000;
 };
 
 namespace slaw
@@ -116,24 +119,13 @@ min_value()
 		return 0;
 	}
 
-	if constexpr (is_same<T, i8>())
+	if constexpr (is_same<T, i8>() || is_same<T, i16>()
+		|| is_same<T, i32>() || is_same<T, i64>())
 	{
-		return -128;
-	}
+		// We return 0b10000..., which is the minimum value for a
+		// signed integer in two's complement.
 
-	if constexpr (is_same<T, i16>())
-	{
-		return -32768;
-	}
-
-	if constexpr (is_same<T, i32>())
-	{
-		return -2147483648;
-	}
-
-	if constexpr (is_same<T, i64>())
-	{
-		return -9223372036854775808LL;
+		return ((T) 1) << (sizeof(T) * 8 - 1);
 	}
 
 	if constexpr (is_same<T, f32>())
@@ -149,6 +141,15 @@ min_value()
 	throw "Type is not an integer or floating point type.";
 }
 
+// Infinity for a 32-bit floating point type.
+const constexpr f32 Infinity32 = detail::huge_value;
+
+// Infinity for a 64-bit floating point type.
+const constexpr f64 Infinity64 = detail::huge_value;
+
+// Infinity for a 64-bit floating point type.
+const constexpr f64 Infinity = Infinity64;
+
 /**
  * A compile-time function that returns the maximum value that a given type
  * can hold.
@@ -159,44 +160,22 @@ template <typename T>
 constexpr T
 max_value()
 {
-	if constexpr (is_same<T, u8>())
+	if constexpr (is_same<T, u8>() || is_same<T, u16>()
+		|| is_same<T, u32>() || is_same<T, u64>())
 	{
-		return 255;
+		// We return 0b1111..., which is the maximum value for an
+		// unsigned integer in two's complement.
+
+		return ~min_value<T>();
 	}
 
-	if constexpr (is_same<T, i8>())
+	if constexpr (is_same<T, i8>() || is_same<T, i16>()
+		|| is_same<T, i32>() || is_same<T, i64>())
 	{
-		return 127;
-	}
+		// We return 0b01111..., which is the maximum value for a
+		// signed integer in two's complement.
 
-	if constexpr (is_same<T, u16>())
-	{
-		return 65535;
-	}
-
-	if constexpr (is_same<T, i16>())
-	{
-		return 32767;
-	}
-
-	if constexpr (is_same<T, u32>())
-	{
-		return 4294967295;
-	}
-
-	if constexpr (is_same<T, i32>())
-	{
-		return 2147483647;
-	}
-
-	if constexpr (is_same<T, u64>())
-	{
-		return 18446744073709551615ULL;
-	}
-
-	if constexpr (is_same<T, i64>())
-	{
-		return 9223372036854775807LL;
+		return ~min_value<T>();
 	}
 
 	if constexpr (is_same<T, f32>())
