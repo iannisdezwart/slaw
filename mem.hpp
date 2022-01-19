@@ -605,7 +605,7 @@ free(void *ptr)
  * or memory leaks will occur.
  */
 void *
-operator new(usize size)
+operator new(unsigned long size)
 {
 	return slaw::mem::alloc(size);
 }
@@ -619,7 +619,7 @@ operator new(usize size)
  * or memory leaks will occur.
  */
 void *
-operator new[](usize size)
+operator new[](unsigned long size)
 {
 	return slaw::mem::alloc(size);
 }
