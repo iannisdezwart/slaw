@@ -4,6 +4,7 @@
 #include "types.hpp"
 #include "mem.hpp"
 #include "util.hpp"
+#include "math.hpp"
 
 namespace slaw
 {
@@ -177,9 +178,6 @@ struct Vector
 	 *
 	 * - Time complexity: O(n).
 	 * - Space complexity: O(n).
-	 *
-	 * WARNING: If the new capacity is less than
-	 * the size of the vector, BEHAVIOUR IS UNDEFINED.
 	 */
 	void
 	realloc(usize new_capacity)
@@ -542,6 +540,121 @@ struct Vector
 	}
 
 	/**
+	 * Rotates the elements on the array by a given shift size.
+	 * Positive shifts will rotate the elements to the left,
+	 * negative shifts will rotate the elements to the right.
+	 * The elements will wrap around the array.
+	 *
+	 * - Time complexity: O(n).
+	 * - Space complexity: O(1).
+	 */
+	void
+	rotate(isize shift)
+	{
+		// Ensure the shift is within bounds of the size of the array.
+
+		shift %= size;
+
+		// Since the modulo operator might return a negative number,
+		// we need to make sure that the shift is positive.
+
+		if (shift < 0)
+		{
+			shift += size;
+		}
+
+		// We define the vector to have `n` "rings".
+		// The i-th ring starts at the index `i`.
+		//
+		// The elements of each ring are `shift` indices apart from
+		// each other, and we will go through all rings and move the
+		// elements one place to the right within that ring.
+		// If we do this for each ring, we are effectively rotating
+		// the elements on the vector by `shift`, which is exactly what
+		// we need to do.
+		//
+		// From the definition of the rings of the vector, it follows
+		// that the number of rings in the vector is equal to the
+		// greatest common divisor of `size` and `shift`.
+		//
+		// If we simply have one ring, we could return to the element
+		// we started from before going over all elements of the vector.
+		// Consider a vector of 6 elements:
+		//
+		// [0] [1] [2] [3] [4] [5]
+		//  ╰───────^
+		//          ╰───────^
+		//  ^───────────────╯
+		//
+		// We would only rotate 0, 2 and 4, missing the ring 1, 3, 5.
+
+		usize num_rings = gcd(size, (usize) shift);
+
+		// Rotate the elements.
+
+		for (usize i = 0; i < num_rings; i++)
+		{
+			// For each ring, we will move the elements one place
+			// to the right. We start at the index of the ring.
+			// We will save the element at the end of the ring,
+			// so we can move it back to the beginning of the ring.
+
+			T last_element = data[i];
+			usize j = i;
+
+			while (true)
+			{
+				// Compute the index of the next element in the
+				// ring.
+
+				usize next_index = j + shift;
+
+				// If the next index is greater than the size of
+				// the vector, we wrap around the vector.
+
+				if (next_index >= size)
+				{
+					next_index -= size;
+				}
+
+				if (next_index == i)
+				{
+					// We have reached the beginning of the
+					// ring. We are done with this ring.
+					// Move the last element back to the
+					// beginning of the ring.
+
+					data[j] = last_element;
+					break;
+				}
+
+				// Move the element to the next index.
+
+				data[j] = data[next_index];
+				j = next_index;
+			}
+		}
+	}
+
+	/**
+	 * Reverses the order of the elements on the vector in-place.
+	 *
+	 * - Time complexity: O(n).
+	 * - Space complexity: O(1).
+	 */
+	void
+	reverse()
+	{
+		// Swap the elements at the left half of the array with their
+		// corresponding elements at the right half of the array.
+
+		for (usize i = 0; i < size / 2; i++)
+		{
+			swap(data[i], data[size - 1 - i]);
+		}
+	}
+
+	/**
 	 * Iterator implementation for the vector.
 	 * Allows
 	 */
@@ -707,6 +820,26 @@ struct Vector
 	const
 	{
 		return ConstIterator(data - 1);
+	}
+
+	/**
+	 * Fills a new vector of a given size with a given value.
+	 * The vector is resized to the given size.
+	 *
+	 * - Time complexity: O(n).
+	 * - Space complexity: O(n).
+	 */
+	static Vector<T>
+	fill(usize size, const T &value)
+	{
+		Vector<T> result(size);
+
+		for (usize i = 0; i < size; i++)
+		{
+			result[i] = value;
+		}
+
+		return result;
 	}
 };
 }; // namespace slaw
