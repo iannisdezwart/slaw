@@ -5,6 +5,7 @@
 #include "mem.hpp"
 #include "types.hpp"
 #include "util.hpp"
+#include "math.hpp"
 #include "vector.hpp"
 #include "string.hpp"
 
