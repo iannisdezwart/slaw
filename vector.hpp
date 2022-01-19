@@ -190,7 +190,9 @@ struct Vector
 
 		// We will copy the elements from the old array to the new one.
 
-		for (usize i = 0; i < size; i++)
+		usize elements_to_copy = min(size, new_capacity);
+
+		for (usize i = 0; i < elements_to_copy; i++)
 		{
 			new_data[i] = data[i];
 		}
@@ -409,6 +411,10 @@ struct Vector
 		{
 			data[size++] = vector[i];
 		}
+
+		// Update the size.
+
+		size = vector.size;
 	}
 
 	/**
@@ -472,9 +478,13 @@ struct Vector
 		{
 			if (data[i] == element)
 			{
+				// The element was found.
+
 				return true;
 			}
 		}
+
+		// The element was not found.
 
 		return false;
 	}
@@ -488,14 +498,8 @@ struct Vector
 	bool
 	contains(const Vector<T> &sequence) const
 	{
-		// Check if the sequence is empty.
-
-		if (sequence.size == 0)
-		{
-			return true;
-		}
-
-		// Check if the sequence is longer than the vector.
+		// If the sequence is longer than the vector,
+		// the vector cannot possibly contain the sequence.
 
 		if (sequence.size > size)
 		{
@@ -508,10 +512,17 @@ struct Vector
 		{
 			bool found = true;
 
+			// For each index in the vector, we check if the
+			// elements from this index are equal to the
+			// elements from the sequence.
+
 			for (usize j = 0; j < sequence.size; j++)
 			{
 				if (data[i + j] != sequence[j])
 				{
+					// We found elements that are not equal,
+					// so we will advance to the next index.
+
 					found = false;
 					break;
 				}
@@ -519,9 +530,13 @@ struct Vector
 
 			if (found)
 			{
+				// We found the sequence in the vector.
+
 				return true;
 			}
 		}
+
+		// The sequence is not contained in the vector.
 
 		return false;
 	}

@@ -88,6 +88,8 @@ struct String : public Vector<char>
 		{
 			data[i] = source[i];
 		}
+
+		size = N - 1;
 	}
 
 	/**
@@ -113,6 +115,8 @@ struct String : public Vector<char>
 		{
 			data[i] = source[i];
 		}
+
+		size = N - 1;
 
 		return *this;
 	}
@@ -161,6 +165,10 @@ struct String : public Vector<char>
 		{
 			data[size + i] = s[i];
 		}
+
+		// Update the size.
+
+		size += N - 1;
 	}
 
 	/**
@@ -172,9 +180,9 @@ struct String : public Vector<char>
 	String
 	operator+(char c) const
 	{
-		String s(*this);
-		s += c;
-		return s;
+		String out(*this);
+		out += c;
+		return out;
 	}
 
 	/**
@@ -186,9 +194,9 @@ struct String : public Vector<char>
 	String
 	operator+(const String &s) const
 	{
-		String t(*this);
-		t += s;
-		return t;
+		String out(*this);
+		out += s;
+		return out;
 	}
 
 	/**
@@ -201,9 +209,41 @@ struct String : public Vector<char>
 	String
 	operator+(const char (&s)[N]) const
 	{
-		String t(*this);
-		t += s;
-		return t;
+		String out(*this);
+		out += s;
+		return out;
+	}
+
+	/**
+	 * Creates a new string by prepending a character array to this string.
+	 *
+	 * - Time complexity: O(n).
+	 * - Space complexity: O(1).
+	 */
+	template <usize N>
+	friend String
+	operator+(const char (&s)[N], const String &str)
+	{
+		// Create a new string of the correct size.
+
+		String out(N - 1 + str.size);
+		out.size = N - 1 + str.size;
+
+		// Copy the characters from the character array into the string.
+
+		for (usize i = 0; i < N - 1; i++)
+		{
+			out[i] = s[i];
+		}
+
+		// Copy the characters from the string into the string.
+
+		for (usize i = 0; i < str.size; i++)
+		{
+			out[N - 1 + i] = str[i];
+		}
+
+		return out;
 	}
 
 	/**
@@ -215,18 +255,28 @@ struct String : public Vector<char>
 	bool
 	operator==(const String &s) const
 	{
+		// If the strings are not the same size, they cannot be equal.
+
 		if (size != s.size)
 		{
 			return false;
 		}
 
+		// Compare the characters in the strings.
+
 		for (usize i = 0; i < size; i++)
 		{
 			if (data[i] != s.data[i])
 			{
+				// We found characters that are not equal,
+				// so the strings are not equal.
+
 				return false;
 			}
 		}
+
+		// All characters in the strings are equal,
+		// so the strings are equal.
 
 		return true;
 	}
@@ -266,6 +316,10 @@ struct String : public Vector<char>
 				data[i * size + j] = data[j];
 			}
 		}
+
+		// Update the size.
+
+		size *= n;
 	}
 
 	/**
@@ -305,6 +359,10 @@ struct String : public Vector<char>
 	bool
 	starts_with(const String &s) const
 	{
+		// If the size of the string is smaller than the size of the
+		// substring, then the string cannot possibly start with the
+		// substring.
+
 		if (size < s.size)
 		{
 			return false;
@@ -316,9 +374,15 @@ struct String : public Vector<char>
 		{
 			if (data[i] != s.data[i])
 			{
+				// We found characters that are not equal,
+				// so the string cannot possibly start with the
+				// substring.
+
 				return false;
 			}
 		}
+
+		// The string starts with the substring.
 
 		return true;
 	}
@@ -333,6 +397,10 @@ struct String : public Vector<char>
 	bool
 	starts_with(const char (&s)[N]) const
 	{
+		// If the size of the string is smaller than the size of the
+		// substring, then the string cannot possibly start with the
+		// substring.
+
 		if (size < N - 1)
 		{
 			return false;
@@ -344,9 +412,15 @@ struct String : public Vector<char>
 		{
 			if (data[i] != s[i])
 			{
+				// We found characters that are not equal,
+				// so the string cannot possibly start with the
+				// substring.
+
 				return false;
 			}
 		}
+
+		// The string starts with the substring.
 
 		return true;
 	}
@@ -360,6 +434,10 @@ struct String : public Vector<char>
 	bool
 	ends_with(const String &s) const
 	{
+		// If the size of the string is smaller than the size of the
+		// substring, then the string cannot possibly end with the
+		// substring.
+
 		if (size < s.size)
 		{
 			return false;
@@ -371,9 +449,15 @@ struct String : public Vector<char>
 		{
 			if (data[size - s.size + i] != s.data[i])
 			{
+				// We found characters that are not equal,
+				// so the string cannot possibly end with the
+				// substring.
+
 				return false;
 			}
 		}
+
+		// The string ends with the substring.
 
 		return true;
 	}
@@ -388,6 +472,10 @@ struct String : public Vector<char>
 	bool
 	ends_with(const char (&s)[N]) const
 	{
+		// If the size of the string is smaller than the size of the
+		// substring, then the string cannot possibly end with the
+		// substring.
+
 		if (size < N - 1)
 		{
 			return false;
@@ -399,9 +487,15 @@ struct String : public Vector<char>
 		{
 			if (data[size - N + i] != s[i])
 			{
+				// We found characters that are not equal,
+				// so the string cannot possibly end with the
+				// substring.
+
 				return false;
 			}
 		}
+
+		// The string ends with the substring.
 
 		return true;
 	}
@@ -420,14 +514,8 @@ struct String : public Vector<char>
 	bool
 	contains(const char (&s)[N]) const
 	{
-		// Check if the character array is empty.
-
-		if (N == 1)
-		{
-			return false;
-		}
-
-		// Check if the character array is longer than the string.
+		// If the character array is longer than the string,
+		// the string cannot possibly contain the character array.
 
 		if (N - 1 > size)
 		{
@@ -440,10 +528,18 @@ struct String : public Vector<char>
 		{
 			bool found = true;
 
+			// For each index in the string, we check if the
+			// characters from this index are equal to the
+			// characters from the character array.
+
 			for (usize j = 0; j < N - 1; j++)
 			{
 				if (data[i + j] != s[j])
 				{
+					// We found characters that are not
+					// equal, so we will advance to the next
+					// index.
+
 					found = false;
 					break;
 				}
@@ -451,9 +547,13 @@ struct String : public Vector<char>
 
 			if (found)
 			{
+				// We found the character array in the string.
+
 				return true;
 			}
 		}
+
+		// The character array is not contained in the string.
 
 		return false;
 	}
