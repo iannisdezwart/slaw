@@ -1,69 +1,47 @@
 #include "../slaw.hpp"
 
-slaw::Vector<u32>
-create_arr(usize size)
+EXPORT("vec_test")
+void
+vec_test(usize size)
 {
-	slaw::Vector<u32> vec;
+	slaw::Vector<int> vec;
 
-	for (u32 i = 0; i < size; i++)
+	for (int i = 0; i < size; i++)
 	{
 		vec.push_back(i);
 	}
 
-	return vec;
-}
-
-u32
-sum(slaw::Vector<u32> vec)
-{
-	u32 sum = 0;
-
-	for (u32 v : vec)
+	for (int i = 0; i < size; i++)
 	{
-		sum += v;
+		if (vec[i] != size - 1 - i)
+		{
+			slaw::eval("console.warn('vec_test() failed!')");
+			return;
+		}
 	}
 
-	return sum;
+	slaw::eval("console.log('vec_test() passed!')");
 }
 
-EXPORT("sum_0_to_n")
-u32
-sum_0_to_n(usize n)
+EXPORT("string_test")
+void
+string_test()
 {
-	return sum(create_arr(n));
-}
+	slaw::String s = "Hello, ";
+	s += "world!";
 
-EXPORT("mem_at")
-u8
-mem_at(u8 *n)
-{
-	return *n;
-}
-
-EXPORT("allocate")
-u8 *
-allocate(usize size)
-{
-	u8 *mem = new u8[size];
-
-	for (usize i = 0; i < size; i++)
+	if (s != "Hello, world!")
 	{
-		mem[i] = i;
+		slaw::eval("console.warn('string_test() failed!')");
+		return;
 	}
 
-	return mem;
+	slaw::eval("console.log('string_test() passed!')");
 }
 
-EXPORT("get_heap_end")
-u8 *
-get_heap_end()
+EXPORT("print_test")
+void
+print_test()
 {
-	return slaw::mem::heap_end;
-}
-
-EXPORT("get_program_break")
-u8 *
-get_program_break()
-{
-	return slaw::mem::program_break;
+	slaw::print("Hello, world!");
 }

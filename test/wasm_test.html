@@ -5,33 +5,8 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>WASM Test</title>
 
-		<script>
-			const main = async () =>
-			{
-				const req = await fetch('main.wasm')
-				const data = await req.arrayBuffer()
-				const wasm = await WebAssembly.instantiate(data, {
-					env: {
-						brk(n)
-						{
-							const curSize = wasm.instance.exports.memory.buffer.byteLength
-							const newSize = curSize + n
-							const curPages = curSize / 65536
-							const newPages = Math.ceil(newSize / 65536)
-							const pagesDiff = newPages - curPages
-
-							wasm.instance.exports.memory.grow(pagesDiff)
-
-							return newPages * 65536
-						}
-					}
-				})
-
-				this.wasm = wasm
-			}
-
-			main()
-		</script>
+		<script src="../slaw.js"></script>
+		<script src="wasm_test.js"></script>
 	</head>
 	<body>
 		<h1>WASM Test</h1>
