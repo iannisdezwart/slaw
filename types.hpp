@@ -71,6 +71,24 @@ is_same()
 }
 
 /**
+ * A compile-time function that returns true if the type is an integer.
+ */
+template <typename T>
+constexpr bool
+is_integer()
+{
+	if constexpr (is_same<T, u8>() || is_same<T, i8>()
+		|| is_same<T, u16>() || is_same<T, i16>()
+		|| is_same<T, u32>() || is_same<T, i32>()
+		|| is_same<T, u64>() || is_same<T, i64>())
+	{
+		return true;
+	}
+
+	return false;
+}
+
+/**
  * A compile-time function that returns true if the type is signed.
  * Throws a compile-time error if the type is not a valid integer type.
  */
@@ -83,6 +101,7 @@ is_signed()
 	{
 		return false;
 	}
+
 	if constexpr (is_same<T, i8>() || is_same<T, i16>()
 		|| is_same<T, i32>() || is_same<T, i64>())
 	{
@@ -150,6 +169,15 @@ const constexpr f64 Infinity64 = detail::huge_value;
 // Infinity for a 64-bit floating point type.
 const constexpr f64 Infinity = Infinity64;
 
+// The lowest positive value for a 32-bit floating point type.
+const constexpr f32 Epsilon32 = 1.1920928955078125e-07f;
+
+// The lowest positive value for a 64-bit floating point type.
+const constexpr f64 Epsilon64 = 2.220446049250313e-16;
+
+// The lowest positive value for a 64-bit floating point type.
+const constexpr f64 Epsilon = Epsilon64;
+
 /**
  * A compile-time function that returns the maximum value that a given type
  * can hold.
@@ -189,6 +217,28 @@ max_value()
 	}
 
 	throw "Type is not an integer or floating point type.";
+}
+
+/**
+ * Comparison function that returns true if the first value is less than the
+ * second value.
+ */
+template <typename T>
+constexpr bool
+less(T a, T b)
+{
+	return a < b;
+}
+
+/**
+ * Comparison function that returns true if the first value is bigger than the
+ * second value.
+ */
+template <typename T>
+constexpr bool
+greater(T a, T b)
+{
+	return a > b;
 }
 }; // namespace slaw
 

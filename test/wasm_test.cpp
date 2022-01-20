@@ -45,3 +45,11 @@ print_test()
 {
 	slaw::print("Hello, world!");
 }
+
+EXPORT("sqrt_test")
+f64
+sqrt_test(f64 n)
+{
+	constexpr const f64 test = slaw::sqrt(2);
+	return slaw::sqrt(n);
+}

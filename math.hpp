@@ -1,8 +1,43 @@
 #ifndef SLAW_MATH_H
 #define SLAW_MATH_H
 
+#include "types.hpp"
+
 namespace slaw
 {
+// Below are some common mathematical constants.
+
+// Pi (π): the ratio of a circle's circumference to its diameter.
+constexpr const f64 PI = 3.14159265358979323846;
+
+// Half of PI: π / 2.
+constexpr const f64 HALF_PI = PI / 2.0;
+
+// Double of PI: π * 2.
+constexpr const f64 TWO_PI = PI * 2.0;
+
+// Euler's number (e): the base of the natural logarithm.
+constexpr const f64 E = 2.71828182845904523536;
+
+// ln(2): the natural logarithm of 2.
+constexpr const f64 LN_2 = 0.69314718055994530941;
+
+// ln(10): the natural logarithm of 10.
+constexpr const f64 LN_10 = 2.30258509299404568402;
+
+// log_2(e): the base-2 logarithm of e.
+constexpr const f64 LOG_2_E = 1.44269504088896340736;
+
+// log_10(e): the base-10 logarithm of e.
+constexpr const f64 LOG_10_E = 0.43429448190325182765;
+
+// √2: the square root of 2.
+constexpr const f64 SQRT_2 = 1.41421356237309504880;
+
+// 1 / √2: the inverse square root of 2.
+// Equivalent to √0.5.
+constexpr const f64 INV_SQRT_2 = 0.70710678118654752440;
+
 /**
  * Returns the minimum of two values.
  */
@@ -48,7 +83,7 @@ template <typename T>
 constexpr inline T
 abs(T n)
 {
-	if constexpr (is_unsigned<T>())
+	if constexpr (is_integer<T>() && is_unsigned<T>())
 	{
 		// If the type is unsigned, just return the value.
 
@@ -70,6 +105,34 @@ abs(T n)
 	}
 
 	return n;
+}
+
+/**
+ * Rounds the given number down to the nearest integer.
+ */
+constexpr i64
+floor(f32 x)
+{
+	return static_cast<i64>(x);
+}
+
+/**
+ * Rounds the given number up to the nearest integer.
+ */
+constexpr i64
+ceil(f32 x)
+{
+	return static_cast<i64>(x + 1);
+}
+
+/**
+ * Rounds the given number to the nearest integer.
+ * .50000... and above is rounded up, .49999... and below is rounded down.
+ */
+constexpr i64
+round(f32 x)
+{
+	return static_cast<i64>(x + 0.5f);
 }
 
 /**
@@ -308,6 +371,116 @@ gcd(T a, T b)
 
 		return detail::gcd_impl(a, b);
 	}
+}
+
+/**
+ * Returns the square root of a number.
+ */
+constexpr f64
+sqrt(f64 n)
+{
+	// If we evaluate this function at compile time,
+	// we cannot use the builtin sqrt function.
+
+	if (__builtin_is_constant_evaluated())
+	{
+		// We use Newton's method to find the square root.
+		// Newton's method is an iterative method to find the root of a
+		// given function. The formula for Newton's method is:
+		// x_{n+1} = x_n - f(x_n) / f'(x_n)
+		//
+		// Since x = √n, which can be rewritten to x^2 - n = 0,
+		// we can find the square root of n by finding the root of
+		// the equation x^2 - n = 0. Note that the derivative of this
+		// equation is 2x, which we will need in the formula for
+		// Newton's method.
+		//
+		// We will start with an initial guess of x = n / 2.
+
+		f64 x = n / 2;
+		f64 delta = 1;
+
+		// Now we will do a couple of iterations.
+		// Note that we take f(x) = x^2 - n, and f'(x) = 2x.
+		// We will stop when the difference between the current guess
+		// and the previous guess is less than the smallest number
+		// that can be represented by an f64.
+
+		while (abs(delta) > Epsilon64)
+		{
+			f64 x_old = x;
+			x = x - (x * x - n) / (2 * x);
+			delta = x_old - x;
+		}
+
+		// The value of x will be the square root of n.
+
+		return x;
+	}
+
+	// If we are not interpreting this function at compile time,
+	// we will tell the compiler to use the f64.sqrt WASM instruction.
+	// This function is not available at compile time, so that's why
+	// we have all of this code above.
+
+	return __builtin_sqrt(n);
+}
+
+namespace detail
+{
+/**
+ * Normalises an angle to the range [ 0, 2π ].
+ */
+constexpr inline f64
+normalise_angle_around_pi(f64 angle)
+{
+	return angle - floor(angle / TWO_PI) * TWO_PI;
+}
+
+/**
+ * Normalises an angle to the range [ -π, π ].
+ */
+constexpr inline f64
+normalise_angle_around_zero(f64 angle)
+{
+	angle = normalise_angle_around_pi(angle);
+
+	if (angle > PI)
+	{
+		angle -= TWO_PI;
+	}
+
+	return angle;
+}
+};
+
+/**
+ * Computes the sine of a given angle.
+ */
+constexpr f64
+sin(f64 angle)
+{
+	// Use the Taylor series to compute the sine of an angle.
+	// The series is: sin(x) = x - x^3 / 3! + x^5 / 5! - x^7 / 7! + ...
+	// The series converges very quickly, so a couple of terms are enough.
+	// TODO: research how many terms we need and research more efficient
+	// ways of doing this.
+
+	// Normalise the angle.
+
+	angle = detail::normalise_angle_around_zero(angle);
+
+	// Compute the sine.
+
+	f64 first_power   = angle;
+	f64 third_power   = first_power * angle * angle;
+	f64 fifth_power   = third_power * angle * angle;
+	f64 seventh_power = fifth_power * angle * angle;
+
+	return first_power
+		- third_power   / 6.0
+		+ fifth_power   / 120.0
+		- seventh_power / 5040.0;
 }
 }; // namespace slaw
 
