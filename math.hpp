@@ -176,9 +176,9 @@ template <typename T>
 constexpr inline T
 clz(T n)
 {
-	// Using builtins for 32 and 64 bit integers.
-	// 8 and 16 bit integers will use the 32 bit builtin, but the number
-	// will be shifted to the left.
+	// Using builtins for 16, 32 and 64 bit integers.
+	// 8 bit integers have to be implemented manually, but are compiled
+	// into the same WASM code as the 16 bit built-in.
 
 	if constexpr (sizeof(T) == 8)
 	{
@@ -192,12 +192,12 @@ clz(T n)
 
 	if constexpr (sizeof(T) == 2)
 	{
-		return min(16, __builtin_clz(n << 16));
+		return __builtin_clzs(n);
 	}
 
 	if constexpr (sizeof(T) == 1)
 	{
-		return min(8, __builtin_clz(n << 24));
+		return (__builtin_clz(n & 0xFF) - 24) & 0xFF;
 	}
 
 	throw "Type is not a valid integer type.";
@@ -217,9 +217,9 @@ template <typename T>
 constexpr inline T
 ctz(T n)
 {
-	// Using builtins for 32 and 64 bit integers.
-	// 8 and 16 bit integers will use the 32 bit builtin, but the number
-	// will be shifted to the left.
+	// Using builtins for 16, 32 and 64 bit integers.
+	// 8 bit integers will use the 32 bit builtin, but we will ensure
+	// we get the correct result by ORing the input with 256.
 
 	if constexpr (sizeof(T) == 8)
 	{
@@ -233,12 +233,18 @@ ctz(T n)
 
 	if constexpr (sizeof(T) == 2)
 	{
-		return min(16, __builtin_ctz(n));
+		return __builtin_ctzs(n);
 	}
 
 	if constexpr (sizeof(T) == 1)
 	{
-		return min(8, __builtin_ctz(n));
+		// We OR the number with 256, so the 8th bit is set to 1.
+		// This allows us to get the correct result of 8, when the
+		// input is 0.
+		// TODO: for some reason, this results in an extra `AND n, 255`
+		// instruction, which is not needed.
+
+		return __builtin_ctz((i32) n | 0x100);
 	}
 
 	throw "Type is not a valid integer type.";
