@@ -28,8 +28,14 @@ constexpr const f64 LN_10 = 2.30258509299404568402;
 // log_2(e): the base-2 logarithm of e.
 constexpr const f64 LOG_2_E = 1.44269504088896340736;
 
+// log_2(10): the base-2 logarithm of 10.
+constexpr const f64 LOG_2_10 = 3.32192809488736234787;
+
 // log_10(e): the base-10 logarithm of e.
 constexpr const f64 LOG_10_E = 0.43429448190325182765;
+
+// log_10(2): the base-10 logarithm of 2.
+constexpr const f64 LOG_10_2 = 0.30102999566398119521;
 
 // √2: the square root of 2.
 constexpr const f64 SQRT_2 = 1.41421356237309504880;
@@ -432,12 +438,14 @@ sqrt(f64 n)
 	return __builtin_sqrt(n);
 }
 
+namespace detail
+{
 /**
  * Returns the base-2 logarithm of a floating point number.
  */
 template <typename T>
 constexpr T
-log2(T value)
+log2_impl(T value)
 {
 	// To compute the logarithm efficiently, we will use the fact that
 	// log(A * B) = log(A) + log(B) and a Taylor series of the logarithm
@@ -489,6 +497,55 @@ log2(T value)
 	// Add the exponent. We are now done.
 
 	return log_a + log_b;
+}
+}; // namespace slaw::detail
+
+/**
+ * Returns the base-2 logarithm of a floating point number.
+ */
+constexpr f64
+log2(f64 value)
+{
+	return detail::log2_impl(value);
+}
+
+/**
+ * Returns the base-2 logarithm of a floating point number.
+ */
+constexpr f32
+log2(f32 value)
+{
+	return detail::log2_impl(value);
+}
+
+/**
+ * Returns the base-2 logarithm of a floating point number.
+ */
+template <typename T>
+constexpr f64
+log2(T value)
+{
+	return detail::log2_impl((f64) value);
+}
+
+/**
+ * Returns the natural logarithm of a floating point number.
+ */
+template <typename T>
+constexpr auto
+ln(T value)
+{
+	return log2(value) * LN_2;
+}
+
+/**
+ * Returns the base-10 logarithm of a floating point number.
+ */
+template <typename T>
+constexpr auto
+log10(T value)
+{
+	return log2(value) * LOG_10_2;
 }
 
 namespace detail
