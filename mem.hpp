@@ -1,6 +1,8 @@
 #ifndef SLAW_MEM_H
 #define SLAW_MEM_H
 
+#ifndef NO_MEMORY_ALLOCATOR
+
 #include "types.hpp"
 
 /**
@@ -650,4 +652,5 @@ noexcept
 	slaw::mem::free(ptr);
 }
 
-#endif
+#endif // NO_MEMORY_ALLOCATOR
+#endif // SLAW_MEM_H

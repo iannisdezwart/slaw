@@ -52,9 +52,6 @@ struct is_same_helper<T, T>
 {
 	static const bool value = true;
 };
-
-// A huge value which can be used to represent infinity.
-const constexpr double huge_value = 1.7976931348623158e+308 * 2;
 }; // namespace slaw::detail
 
 namespace slaw
@@ -160,24 +157,6 @@ min_value()
 	throw "Type is not an integer or floating point type.";
 }
 
-// Infinity for a 32-bit floating point type.
-const constexpr f32 Infinity32 = detail::huge_value;
-
-// Infinity for a 64-bit floating point type.
-const constexpr f64 Infinity64 = detail::huge_value;
-
-// Infinity for a 64-bit floating point type.
-const constexpr f64 Infinity = Infinity64;
-
-// The lowest positive value for a 32-bit floating point type.
-const constexpr f32 Epsilon32 = 1.1920928955078125e-07f;
-
-// The lowest positive value for a 64-bit floating point type.
-const constexpr f64 Epsilon64 = 2.220446049250313e-16;
-
-// The lowest positive value for a 64-bit floating point type.
-const constexpr f64 Epsilon = Epsilon64;
-
 /**
  * A compile-time function that returns the maximum value that a given type
  * can hold.
@@ -240,6 +219,176 @@ greater(T a, T b)
 {
 	return a > b;
 }
+
+namespace detail
+{
+// It seems like the only way to convert the raw bytes of a floating
+// point number to an integer in C++ is to use bit_cast.
+// Unions and the Quake III-style float-to-int conversion don't work
+// at compile time.
+// We will create convienence functions for converting to and from
+// floating point types.
+
+/**
+ * Function that converts the raw bytes of 32-bit floating point value to an
+ * integer.
+ */
+constexpr i32
+interpret_float_as_int(f32 value)
+{
+	return __builtin_bit_cast(i32, value);
+}
+
+/**
+ * Function that converts the raw bytes of 64-bit floating point value to an
+ * integer.
+ */
+constexpr i64
+interpret_float_as_int(f64 value)
+{
+	return __builtin_bit_cast(i64, value);
+}
+
+/**
+ * Function that converts the raw bytes of a 32-bit integer to a floating
+ * point value.
+ */
+constexpr f32
+interpret_int_as_float(i32 value)
+{
+	return __builtin_bit_cast(f32, value);
+}
+
+/**
+ * Function that converts the raw bytes of a 64-bit integer to a floating
+ * point value.
+ */
+constexpr f64
+interpret_int_as_float(i64 value)
+{
+	return __builtin_bit_cast(f64, value);
+}
+
+/**
+ * Function that returns the exponent that is stored in the IEEE754
+ * representation of a 32-bit floating point number.
+ */
+constexpr i32
+stored_exponent(f32 value)
+{
+	i32 bits = interpret_float_as_int(value);
+
+	// Shift the exponent bits to the right.
+
+	i32 exp = bits >> 23;
+
+	// Mask off the sign bit, so we are just left with the exponent.
+
+	exp &= 0xFF;
+
+	// According to the IEEE754 single precision floating point standard,
+	// the exponent is biased by 127.
+	// So we need to subtract 127 from the exponent to get the real
+	// exponent.
+
+	return exp - 127;
+}
+
+/**
+ * Function that returns the exponent that is stored in the IEEE754
+ * representation of a 64-bit floating point number.
+ */
+constexpr i32
+stored_exponent(f64 value)
+{
+	i64 bits = interpret_float_as_int(value);
+
+	// Shift the exponent bits to the right.
+
+	i32 exp = bits >> 52;
+
+	// Mask off the sign bit, so we are just left with the exponent.
+
+	exp &= 0x7FF;
+
+	// According to the IEEE754 double precision floating point standard,
+	// the exponent is biased by 1023.
+	// So we need to subtract 1023 from the exponent to get the real
+	// exponent.
+
+	return exp - 1023;
+}
+
+/**
+ * Function that sets the exponent of a 32-bit floating point number to 0.
+ */
+constexpr f32
+clear_exponent(f32 value)
+{
+	// Get the raw bytes of the floating point number.
+
+	i32 bits = interpret_float_as_int(value);
+
+	// Mask off the exponent bits and set it to 127, which represents 0.
+
+	bits &= 0b1'00000000'11111111111111111111111;
+	bits |= 0b0'01111111'00000000000000000000000;
+
+	// Return the new floating point number.
+
+	return interpret_int_as_float(bits);
+}
+
+/**
+ * Function that sets the exponent of a 64-bit floating point number to 0.
+ */
+constexpr f64
+clear_exponent(f64 value)
+{
+	// Get the raw bytes of the floating point number.
+
+	i64 bits = interpret_float_as_int(value);
+
+	// Mask off the exponent bits and set it to 1023, which represents 0.
+
+	bits &= 0x801FFFFFFFFFFFFF; // 0b1'000...'111...
+	bits |= 0x3FF0000000000000; // 0b0'0111...'000...
+
+	// Return the new floating point number.
+
+	return interpret_int_as_float(bits);
+}
+}; // namespace slaw::detail
+
+// Infinity for a 32-bit floating point type.
+const constexpr f32 Infinity32 =
+	detail::interpret_int_as_float((i32) 0x7F800000);
+
+// Infinity for a 64-bit floating point type.
+const constexpr f64 Infinity64 =
+	detail::interpret_int_as_float((i64) 0x7FF0000000000000);
+
+// Infinity for a 64-bit floating point type.
+const constexpr f64 Infinity = Infinity64;
+
+// The lowest positive value for a 32-bit floating point type.
+const constexpr f32 Epsilon32 = 1.1920928955078125e-07f;
+
+// The lowest positive value for a 64-bit floating point type.
+const constexpr f64 Epsilon64 = 2.220446049250313e-16;
+
+// The lowest positive value for a 64-bit floating point type.
+const constexpr f64 Epsilon = Epsilon64;
+
+// An NaN for a 32-bit floating point type.
+// Note that equality comparisons with NaN always resolve to false.
+const constexpr f32 NaN32 =
+	detail::interpret_int_as_float((i32) 0x7FC00000);
+
+// An NaN for a 64-bit floating point type.
+// Note that equality comparisons with NaN always resolve to false.
+const constexpr f64 NaN64 =
+	detail::interpret_int_as_float((i64) 0x7FF8000000000000);
 }; // namespace slaw
 
 #endif

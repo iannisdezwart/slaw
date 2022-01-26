@@ -432,6 +432,65 @@ sqrt(f64 n)
 	return __builtin_sqrt(n);
 }
 
+/**
+ * Returns the base-2 logarithm of a floating point number.
+ */
+template <typename T>
+constexpr T
+log2(T value)
+{
+	// To compute the logarithm efficiently, we will use the fact that
+	// log(A * B) = log(A) + log(B) and a Taylor series of the logarithm
+	// centred around 1.
+	//
+	// We will split the input into two parts: one with just the
+	// mantissa (A) and one with just the exponent (B).
+	//
+	// Since the mantissa is between 1 and 2, it is very close to the
+	// centre of the Taylor series. So we can compute the logarithm of A
+	// with great accuracy with only a few terms.
+	//
+	// log(B) is very easy to compute, because it is equal to the value
+	// of the exponent.
+
+	T a = detail::clear_exponent(value);
+	i32 log_b = detail::stored_exponent(value);
+
+	// We will use a Taylor series to compute the logarithm of A:
+	// log2(x) = 2/ln(2) * [ (x-1)/(x+1) + (x-1)/(x+1)^3/3 + ... ]
+	// The series converges very quickly around 1.
+
+	// The series is centred at 1, but it will lose precision when we
+	// approach 2, so we will shift the range from [1, 2) to [.75, 1.5).
+	// We can easily do this by using log(x) = log(4/3) + log(.75x).
+	// We will multiply our input by .75 and add log(4/3) to the result.
+
+	a *= .75;
+
+	// This is our initial value for log(A).
+
+	T log_a = 0.14384103622589046371; // ln(4/3) / 2
+
+	// We will now do a few iterations of the Taylor series to make the
+	// value we have for log(A) more precise.
+
+	T term = (a - 1) / (a + 1);
+
+	for (u32 i = 0; i < 10; i++)
+	{
+		log_a += term / (2 * i + 1);
+		term *= (a - 1) / (a + 1) * (a - 1) / (a + 1);
+	}
+
+	// Change base from ln to log2.
+
+	log_a *= 2 / LN_2;
+
+	// Add the exponent. We are now done.
+
+	return log_a + log_b;
+}
+
 namespace detail
 {
 /**
@@ -463,7 +522,7 @@ normalise_angle_around_zero(f64 angle)
 /**
  * Computes the sine of a given angle.
  */
-constexpr f64
+f64
 sin(f64 angle)
 {
 	// Use the Taylor series to compute the sine of an angle.
