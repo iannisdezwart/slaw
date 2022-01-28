@@ -178,6 +178,9 @@ struct Vector
 	 *
 	 * - Time complexity: O(n).
 	 * - Space complexity: O(n).
+	 *
+	 * WARNING: If the new capacity is smaller than the current size,
+	 * the vector will be truncated.
 	 */
 	void
 	realloc(usize new_capacity)
@@ -292,6 +295,64 @@ struct Vector
 	}
 
 	/**
+	 * Checks if the contents of this vector are equal to the contents of
+	 * another vector.
+	 */
+	bool
+	operator==(const Vector &other)
+	const
+	{
+		// If the vectors don't have the same size,
+		// they are surely not equal.
+
+		if (size != other.size)
+		{
+			return false;
+		}
+
+		// We compare each element of the vectors.
+
+		for (usize i = 0; i < size; i++)
+		{
+			if (data[i] != other.data[i])
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Checks if the contents of this vector are not equal to the contents of
+	 * another vector.
+	 */
+	bool
+	operator!=(const Vector &other)
+	const
+	{
+		// If the vectors don't have the same size,
+		// they are surely not equal.
+
+		if (size != other.size)
+		{
+			return true;
+		}
+
+		// We compare each element of the vectors.
+
+		for (usize i = 0; i < size; i++)
+		{
+			if (data[i] != other.data[i])
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
 	 * Reserves space for a given number of extra elements.
 	 * The new capacity is updated to fit at least
 	 * the given number of elements.
@@ -387,17 +448,24 @@ struct Vector
 	{
 		// Return the last element and remove it.
 
-		return data[--size];
+		T popped_value = data[--size];
+
+		// If the vector is less than half full, we will shrink it.
+
+		if (size < capacity / 2)
+		{
+			realloc(capacity / 2);
+		}
 	}
 
 	/**
 	 * Attaches a vector to the back of this vector.
 	 *
-	 * - Time complexity: O(1).
+	 * - Time complexity: O(n).
 	 * - Space complexity: O(1).
 	 */
 	void
-	attach(const Vector<T> &vector)
+	attach_back(const Vector<T> &vector)
 	{
 		// Reserve space for the new elements.
 
@@ -407,12 +475,41 @@ struct Vector
 
 		for (usize i = 0; i < vector.size; i++)
 		{
-			data[size++] = vector[i];
+			data[i] = vector[i];
 		}
 
 		// Update the size.
 
 		size = vector.size;
+	}
+
+	/**
+	 * Prepends a vector before the start of this vector.
+	 *
+	 * - Time complexity: O(n + m).
+	 * - Space complexity: O(1).
+	 */
+	void
+	attach_front(const Vector<T> &vector)
+	{
+		// Reserve space for the new elements.
+
+		reserve(vector.size);
+
+		// Shift the elements to the right.
+
+		shift_right(vector.size);
+
+		// Prepend the elements from the other vector to this vector.
+
+		for (usize i = 0; i < vector.size; i++)
+		{
+			data[i] = vector.data[i];
+		}
+
+		// Update the size.
+
+		size += vector.size;
 	}
 
 	/**
@@ -446,7 +543,8 @@ struct Vector
 	 * - Space complexity: O(1).
 	 */
 	isize
-	index_of(const T &element, usize index = 0) const
+	index_of(const T &element, usize index = 0)
+	const
 	{
 		// Find the index of the element.
 
@@ -462,13 +560,49 @@ struct Vector
 	}
 
 	/**
+	 * Returns the last index of the first occurrence of a given element.
+	 * Returns -1 if the element is not found.
+	 * The vector will be searched backwards from the provided index.
+	 */
+	isize
+	last_index_of(const T &element, usize index)
+	const
+	{
+		// Find the index of the element.
+
+		for (isize i = index; i >= 0; i--)
+		{
+			if (data[i] == element)
+			{
+				return i;
+			}
+		}
+
+		return -1;
+	}
+
+	/**
+	 * Returns the last index of the first occurrence of a given element.
+	 * Returns -1 if the element is not found.
+	 * The vector will be searched backwards from the end of the vector.
+	 */
+	isize
+	last_index_of(const T &element)
+	const
+	{
+		return last_index_of(element, size - 1);
+	}
+
+
+	/**
 	 * Checks if the vector contains a given element.
 	 *
 	 * - Time complexity: O(n).
 	 * - Space complexity: O(1).
 	 */
 	bool
-	contains(const T &element) const
+	contains(const T &element)
+	const
 	{
 		// Find the element.
 
@@ -494,7 +628,8 @@ struct Vector
 	 * - Space complexity: O(1).
 	 */
 	bool
-	contains(const Vector<T> &sequence) const
+	contains(const Vector<T> &sequence)
+	const
 	{
 		// If the sequence is longer than the vector,
 		// the vector cannot possibly contain the sequence.
@@ -637,6 +772,32 @@ struct Vector
 	}
 
 	/**
+	 * Shifts the elements on the vector to the right by a given amount.
+	 * The first `shift_size` elements on the vector will keep their
+	 * original value. Accessing these elements before updating them might
+	 * result in undefined behaviour.
+	 *
+	 * - Time complexity: O(n).
+	 * - Space complexity: O(1).
+	 */
+	void
+	shift_right(usize shift_size)
+	{
+		reserve(shift_size);
+
+		// Shift the elements to the right.
+
+		for (isize i = size - 1; i >= 0; i--)
+		{
+			data[i + shift_size] = data[i];
+		}
+
+		// Update the size of the vector.
+
+		size += shift_size;
+	}
+
+	/**
 	 * Reverses the order of the elements on the vector in-place.
 	 *
 	 * - Time complexity: O(n).
@@ -656,7 +817,6 @@ struct Vector
 
 	/**
 	 * Iterator implementation for the vector.
-	 * Allows
 	 */
 	template <bool IsConst>
 	struct IteratorBase

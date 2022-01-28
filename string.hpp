@@ -142,7 +142,7 @@ struct String : public Vector<char>
 	void
 	operator+=(const String &s)
 	{
-		attach(s);
+		attach_back(s);
 	}
 
 	/**
@@ -178,7 +178,8 @@ struct String : public Vector<char>
 	 * - Space complexity: O(1).
 	 */
 	String
-	operator+(char c) const
+	operator+(char c)
+	const
 	{
 		String out(*this);
 		out += c;
@@ -192,7 +193,8 @@ struct String : public Vector<char>
 	 * - Space complexity: O(1).
 	 */
 	String
-	operator+(const String &s) const
+	operator+(const String &s)
+	const
 	{
 		String out(*this);
 		out += s;
@@ -207,7 +209,8 @@ struct String : public Vector<char>
 	 */
 	template <usize N>
 	String
-	operator+(const char (&s)[N]) const
+	operator+(const char (&s)[N])
+	const
 	{
 		String out(*this);
 		out += s;
@@ -253,7 +256,8 @@ struct String : public Vector<char>
 	 * - Space complexity: O(1).
 	 */
 	bool
-	operator==(const String &s) const
+	operator==(const String &s)
+	const
 	{
 		// If the strings are not the same size, they cannot be equal.
 
@@ -288,7 +292,8 @@ struct String : public Vector<char>
 	 * - Space complexity: O(1).
 	 */
 	bool
-	operator!=(const String &s) const
+	operator!=(const String &s)
+	const
 	{
 		return !operator==(s);
 	}
@@ -331,7 +336,8 @@ struct String : public Vector<char>
 	 * - Space complexity: O(1).
 	 */
 	String
-	repeat(usize n) const
+	repeat(usize n)
+	const
 	{
 		// Create a new string of enough size.
 
@@ -357,7 +363,8 @@ struct String : public Vector<char>
 	 * - Space complexity: O(1).
 	 */
 	bool
-	starts_with(const String &s) const
+	starts_with(const String &s)
+	const
 	{
 		// If the size of the string is smaller than the size of the
 		// substring, then the string cannot possibly start with the
@@ -395,7 +402,8 @@ struct String : public Vector<char>
 	 */
 	template <usize N>
 	bool
-	starts_with(const char (&s)[N]) const
+	starts_with(const char (&s)[N])
+	const
 	{
 		// If the size of the string is smaller than the size of the
 		// substring, then the string cannot possibly start with the
@@ -432,7 +440,8 @@ struct String : public Vector<char>
 	 * - Space complexity: O(1).
 	 */
 	bool
-	ends_with(const String &s) const
+	ends_with(const String &s)
+	const
 	{
 		// If the size of the string is smaller than the size of the
 		// substring, then the string cannot possibly end with the
@@ -470,7 +479,8 @@ struct String : public Vector<char>
 	 */
 	template <usize N>
 	bool
-	ends_with(const char (&s)[N]) const
+	ends_with(const char (&s)[N])
+	const
 	{
 		// If the size of the string is smaller than the size of the
 		// substring, then the string cannot possibly end with the
@@ -512,7 +522,8 @@ struct String : public Vector<char>
 	 */
 	template <usize N>
 	bool
-	contains(const char (&s)[N]) const
+	contains(const char (&s)[N])
+	const
 	{
 		// If the character array is longer than the string,
 		// the string cannot possibly contain the character array.
@@ -556,6 +567,69 @@ struct String : public Vector<char>
 		// The character array is not contained in the string.
 
 		return false;
+	}
+
+	/**
+	 * Pads the start of this string with a given character.
+	 * The string is padded until it reaches a given size.
+	 * If the string is already larger than the given size,
+	 * nothing is done.
+	 */
+	void
+	pad_start(char c, usize new_size)
+	{
+		// If the string is already larger than the given size,
+		// then we do nothing.
+
+		if (size >= new_size)
+		{
+			return;
+		}
+
+		// Pad the string at the start.
+
+		usize pad_size = new_size - size;
+		shift_right(pad_size);
+
+		for (usize i = 0; i < pad_size; i++)
+		{
+			data[i] = c;
+		}
+
+		// We don't have to update the size of the string,
+		// because `shift_right` already did that.
+	}
+
+	/**
+	 * Pads the end of this string with a given character.
+	 * The string is padded until it reaches a given size.
+	 * If the string is already larger than the given size,
+	 * nothing is done.
+	 */
+	void
+	pad_end(char c, usize new_size)
+	{
+		// If the string is already larger than the given size,
+		// then we do nothing.
+
+		if (size >= new_size)
+		{
+			return;
+		}
+
+		// Pad the string at the end.
+
+		usize pad_size = new_size - size;
+		reserve(size + pad_size);
+
+		for (usize i = 0; i < pad_size; i++)
+		{
+			data[size + i] = c;
+		}
+
+		// Update the size.
+
+		size += pad_size;
 	}
 };
 }; // namespace slaw
