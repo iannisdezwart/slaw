@@ -3,6 +3,7 @@
 
 #include "util.hpp"
 #include "types.hpp"
+#include "simd.hpp"
 #include "io.hpp"
 #include "mem.hpp"
 #include "export.hpp"
