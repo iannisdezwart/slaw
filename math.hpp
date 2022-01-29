@@ -445,7 +445,7 @@ namespace detail
  */
 template <typename T>
 constexpr T
-log2_impl(T value)
+log2_impl_old(T value)
 {
 	// To compute the logarithm efficiently, we will use the fact that
 	// log(A * B) = log(A) + log(B) and a Taylor series of the logarithm
@@ -497,6 +497,56 @@ log2_impl(T value)
 	// Add the exponent. We are now done.
 
 	return log_a + log_b;
+}
+
+/**
+ * Returns the base-2 logarithm of a floating point number.
+ */
+template <typename T>
+constexpr T
+log2_impl(T value)
+{
+	using U = T;
+
+	// To compute the logarithm efficiently, we will use the following
+	// generalised continued fraction: https://bit.ly/3GaSSsQ.
+	// This fraction converges most quickly around 1.
+
+	const constexpr U ROOT2_2     = 1.4142135623730950488016887;
+	const constexpr U ROOT4_2     = 1.1892071150027210667174999;
+	const constexpr U INV_ROOT2_2 = 0.7071067811865475244008443;
+	const constexpr U INV_ROOT4_2 = 0.8408964152537145430311255;
+	const constexpr U INV_ROOT8_2 = 0.9170040432046712317435416;
+	const constexpr U INV_LN_2    = 1.4426950408889634073599247;
+
+	U a = detail::clear_exponent(value);
+	U offset = 0.125 + (U) detail::stored_exponent(value);
+
+	if (a > ROOT2_2)
+	{
+		a *= INV_ROOT2_2;
+		offset += 0.5;
+	}
+
+	if (a > ROOT4_2)
+	{
+		a *= INV_ROOT4_2;
+		offset += 0.25;
+	}
+
+	a *= INV_ROOT8_2;
+	// Already added 1 / 8 to the offset
+
+	U x1 = a;
+	U x2 = x1 * x1;
+	U x4 = x2 * x2;
+
+	U n = ((363.0 * x1 + 9947.0) * x2 + (48363.0 * x1 + 42875.0)) * x4
+		- ((42875.0 * x1 + 48363.0) * x2 + (9947.0 * x1 + 363.0));
+	U d = ((70.0 * x1 + 3430.0) * x2 + (30870.0 * x1 + 85750.0)) * x4
+		+ ((85750.0 * x1 + 30870.0) * x2 + (3430.0 * x1 + 70.0));
+
+	return INV_LN_2 * (n / d) + offset;
 }
 }; // namespace slaw::detail
 
