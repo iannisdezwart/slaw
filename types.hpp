@@ -270,6 +270,26 @@ interpret_int_as_float(i64 value)
 }
 
 /**
+ * Function that returns the sign of a floating point value.
+ * If positive, returns 0, if negative, returns 1.
+ */
+constexpr bool
+stored_sign(f32 value)
+{
+	return interpret_float_as_int(value) & 0x80000000;
+}
+
+/**
+ * Function that returns the sign of a floating point value.
+ * If positive, returns 0, if negative, returns 1.
+ */
+constexpr bool
+stored_sign(f64 value)
+{
+	return interpret_float_as_int(value) & 0x8000000000000000;
+}
+
+/**
  * Function that returns the exponent that is stored in the IEEE754
  * representation of a 32-bit floating point number.
  */
@@ -317,6 +337,34 @@ stored_exponent(f64 value)
 	// exponent.
 
 	return exp - 1023;
+}
+
+/**
+ * Function that returns the mantissa that is stored in the IEEE754
+ * representation of a 32-bit floating point number.
+ */
+constexpr i32
+stored_mantissa(f32 value)
+{
+	i32 bits = interpret_float_as_int(value);
+
+	// Mask off the exponent and sign bits.
+
+	return bits & 0x007FFFFF;
+}
+
+/**
+ * Function that returns the mantissa that is stored in the IEEE754
+ * representation of a 64-bit floating point number.
+ */
+constexpr i64
+stored_mantissa(f64 value)
+{
+	i64 bits = interpret_float_as_int(value);
+
+	// Mask off the exponent and sign bits.
+
+	return bits & 0x000FFFFFFFFFFFFF;
 }
 
 /**
@@ -370,6 +418,26 @@ const constexpr f64 Infinity64 =
 
 // Infinity for a 64-bit floating point type.
 const constexpr f64 Infinity = Infinity64;
+
+/**
+ * Function that checks if a 32-bit floating point number is not a number.
+ */
+constexpr bool
+is_nan(f32 value)
+{
+	return detail::stored_exponent(value) == 128
+		&& detail::stored_mantissa(value) != 0;
+}
+
+/**
+ * Function that checks if a 64-bit floating point number is not a number.
+ */
+constexpr bool
+is_nan(f64 value)
+{
+	return detail::stored_exponent(value) == 1024
+		&& detail::stored_mantissa(value) != 0;
+}
 
 // The lowest positive value for a 32-bit floating point type.
 const constexpr f32 Epsilon32 = 1.1920928955078125e-07f;
