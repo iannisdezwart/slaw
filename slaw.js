@@ -7,7 +7,29 @@ class SlawEnvironment
 		this.wasm = wasm
 		this.env = {
 			brk: this.brk.bind(this),
-			eval: this.eval.bind(this)
+			eval: this.eval.bind(this),
+			...Math,
+			ln: Math.log,
+			ln1p: Math.log1p,
+			log2: Math.log2,
+			log10: Math.log10,
+			cos: Math.cos,
+			sin: Math.sin,
+			tan: Math.tan,
+			acos: Math.acos,
+			asin: Math.asin,
+			atan: Math.atan,
+			atan2: Math.atan2,
+			cosh: Math.cosh,
+			sinh: Math.sinh,
+			tanh: Math.tanh,
+			acosh: Math.acosh,
+			asinh: Math.asinh,
+			atanh: Math.atanh,
+			exp: Math.exp,
+			expm1: Math.expm1,
+			cbrt: Math.cbrt,
+			hypot: Math.hypot
 		}
 	}
 

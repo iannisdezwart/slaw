@@ -115,30 +115,145 @@ abs(T n)
 
 /**
  * Rounds the given number down to the nearest integer.
+ * * .7 -> 0, -.7 -> -1
+ * * .3 -> 0, -.3 -> -1
  */
+template <typename T>
 constexpr i64
-floor(f32 x)
+floor(T x)
 {
-	return static_cast<i64>(x);
+	// If the function is being evaluated at compile time,
+	// we compute the floor manually.
+
+	if (__builtin_is_constant_evaluated())
+	{
+		i64 result = x;
+
+		if (x < result)
+		{
+			result--;
+		}
+
+		return result;
+	}
+
+	// If the function is not evaluated at compile time,
+	// we use the floor builtins.
+
+	if constexpr (is_same<T, f32>())
+	{
+		return __builtin_floorf(x);
+	}
+
+	if constexpr (is_same<T, f64>())
+	{
+		return __builtin_floor(x);
+	}
+
+	throw "Type is not a valid floating point type.";
 }
 
 /**
  * Rounds the given number up to the nearest integer.
  */
+template <typename T>
 constexpr i64
-ceil(f32 x)
+ceil(T x)
 {
-	return static_cast<i64>(x + 1);
+	// If the function is being evaluated at compile time,
+	// we compute the ceil manually.
+
+	if (__builtin_is_constant_evaluated())
+	{
+		i64 result = x;
+
+		if (x > result)
+		{
+			result++;
+		}
+
+		return result;
+	}
+
+	// If the function is not evaluated at compile time,
+	// we use the ceil builtins.
+
+	if constexpr (is_same<T, f32>())
+	{
+		return __builtin_ceilf(x);
+	}
+
+	if constexpr (is_same<T, f64>())
+	{
+		return __builtin_ceil(x);
+	}
+
+	throw "Type is not a valid floating point type.";
 }
 
 /**
  * Rounds the given number to the nearest integer.
  * .50000... and above is rounded up, .49999... and below is rounded down.
  */
+template <typename T>
 constexpr i64
-round(f32 x)
+round(T x)
 {
-	return static_cast<i64>(x + 0.5f);
+	// If the function is being evaluated at compile time,
+	// we round the number manually.
+
+	if (__builtin_is_constant_evaluated())
+	{
+		return floor(x + 0.5);
+	}
+
+	// If the function is not evaluated at compile time,
+	// we use the round builtins.
+
+	if constexpr (is_same<T, f32>())
+	{
+		return __builtin_roundf(x);
+	}
+
+	if constexpr (is_same<T, f64>())
+	{
+		return __builtin_round(x);
+	}
+
+	throw "Type is not a valid floating point type.";
+}
+
+/**
+ * Rounds the given number towards zero.
+ * * .7 -> 0, -.7 -> 0
+ * * 3.4 -> 3, -3.4 -> 3
+ */
+template <typename T>
+constexpr i64
+trunc(T x)
+{
+	// If the function is being evaluated at compile time,
+	// we truncate the number manually.
+
+	if (__builtin_is_constant_evaluated())
+	{
+		return x;
+	}
+
+	// If the function is not evaluated at compile time,
+	// we use the trunc builtins.
+
+	if constexpr (is_same<T, f32>())
+	{
+		return __builtin_truncf(x);
+	}
+
+	if constexpr (is_same<T, f64>())
+	{
+		return __builtin_trunc(x);
+	}
+
+	throw "Type is not a valid floating point type.";
 }
 
 /**
@@ -438,220 +553,412 @@ sqrt(f64 n)
 	return __builtin_sqrt(n);
 }
 
-namespace detail
-{
 /**
- * Returns the base-2 logarithm of a floating point number.
+ * Returns the natural logarithm of a floating point number.
+ * TODO: Make constexpr.
  */
-template <typename T>
-constexpr T
-log2_impl_old(T value)
-{
-	// To compute the logarithm efficiently, we will use the fact that
-	// log(A * B) = log(A) + log(B) and a Taylor series of the logarithm
-	// centred around 1.
-	//
-	// We will split the input into two parts: one with just the
-	// mantissa (A) and one with just the exponent (B).
-	//
-	// Since the mantissa is between 1 and 2, it is very close to the
-	// centre of the Taylor series. So we can compute the logarithm of A
-	// with great accuracy with only a few terms.
-	//
-	// log(B) is very easy to compute, because it is equal to the value
-	// of the exponent.
-
-	T a = detail::clear_exponent(value);
-	i32 log_b = detail::stored_exponent(value);
-
-	// We will use a Taylor series to compute the logarithm of A:
-	// log2(x) = 2/ln(2) * [ (x-1)/(x+1) + (x-1)/(x+1)^3/3 + ... ]
-	// The series converges very quickly around 1.
-
-	// The series is centred at 1, but it will lose precision when we
-	// approach 2, so we will shift the range from [1, 2) to [.75, 1.5).
-	// We can easily do this by using log(x) = log(4/3) + log(.75x).
-	// We will multiply our input by .75 and add log(4/3) to the result.
-
-	a *= .75;
-
-	// This is our initial value for log(A).
-
-	T log_a = 0.14384103622589046371; // ln(4/3) / 2
-
-	// We will now do a few iterations of the Taylor series to make the
-	// value we have for log(A) more precise.
-
-	T term = (a - 1) / (a + 1);
-
-	for (u32 i = 0; i < 10; i++)
-	{
-		log_a += term / (2 * i + 1);
-		term *= (a - 1) / (a + 1) * (a - 1) / (a + 1);
-	}
-
-	// Change base from ln to log2.
-
-	log_a *= 2 / LN_2;
-
-	// Add the exponent. We are now done.
-
-	return log_a + log_b;
-}
-
-/**
- * Returns the base-2 logarithm of a floating point number.
- */
-template <typename T>
-constexpr T
-log2_impl(T value)
-{
-	// To compute the logarithm efficiently, we will use the following
-	// generalised continued fraction: https://bit.ly/3GaSSsQ.
-	// This fraction converges most quickly around 1.
-
-	const constexpr T ROOT2_2     = 1.4142135623730950488016887;
-	const constexpr T ROOT4_2     = 1.1892071150027210667174999;
-	const constexpr T INV_ROOT2_2 = 0.7071067811865475244008443;
-	const constexpr T INV_ROOT4_2 = 0.8408964152537145430311255;
-	const constexpr T INV_ROOT8_2 = 0.9170040432046712317435416;
-	const constexpr T INV_LN_2    = 1.4426950408889634073599247;
-
-	T a = detail::clear_exponent(value);
-	T offset = 0.125 + (T) detail::stored_exponent(value);
-
-	if (a > ROOT2_2)
-	{
-		a *= INV_ROOT2_2;
-		offset += 0.5;
-	}
-
-	if (a > ROOT4_2)
-	{
-		a *= INV_ROOT4_2;
-		offset += 0.25;
-	}
-
-	a *= INV_ROOT8_2;
-	// Already added 1 / 8 to the offset
-
-	T x1 = a;
-	T x2 = x1 * x1;
-	T x4 = x2 * x2;
-
-	T n = ((363.0 * x1 + 9947.0) * x2 + (48363.0 * x1 + 42875.0)) * x4
-		- ((42875.0 * x1 + 48363.0) * x2 + (9947.0 * x1 + 363.0));
-	T d = ((70.0 * x1 + 3430.0) * x2 + (30870.0 * x1 + 85750.0)) * x4
-		+ ((85750.0 * x1 + 30870.0) * x2 + (3430.0 * x1 + 70.0));
-
-	return INV_LN_2 * (n / d) + offset;
-}
-}; // namespace slaw::detail
-
-/**
- * Returns the base-2 logarithm of a floating point number.
- */
-constexpr f64
-log2(f64 value)
-{
-	return detail::log2_impl(value);
-}
-
-/**
- * Returns the base-2 logarithm of a floating point number.
- */
-constexpr f32
-log2(f32 value)
-{
-	return detail::log2_impl(value);
-}
-
-/**
- * Returns the base-2 logarithm of a floating point number.
- */
-template <typename T>
-constexpr f64
-log2(T value)
-{
-	return detail::log2_impl((f64) value);
-}
+IMPORT("ln")
+f64
+ln(f64 value);
 
 /**
  * Returns the natural logarithm of a floating point number.
+ * TODO: Make constexpr.
  */
-template <typename T>
-constexpr auto
-ln(T value)
+f32
+ln(f32 value)
 {
-	return log2(value) * LN_2;
+	return ln((f64) value);
+}
+
+/**
+ * Returns the natural logarithm of [ a floating point number plus one ]
+ * (ln(1 + value)).
+ * TODO: Make constexpr.
+ */
+IMPORT("ln1p")
+f64
+ln1p(f64 value);
+
+/**
+ * Returns the natural logarithm of [ a floating point number plus one ].
+ * (ln(1 + value)).
+ * TODO: Make constexpr.
+ */
+f32
+ln1p(f32 value)
+{
+	return ln1p((f64) value);
+}
+
+/**
+ * Returns the base-2 logarithm of a floating point number.
+ * TODO: Make constexpr.
+ */
+IMPORT("log2")
+f64
+log2(f64 value);
+
+/**
+ * Returns the base-2 logarithm of a floating point number.
+ * TODO: Make constexpr.
+ */
+f32
+log2(f32 value)
+{
+	return log2((f64) value);
 }
 
 /**
  * Returns the base-10 logarithm of a floating point number.
+ * TODO: Make constexpr.
  */
-template <typename T>
-constexpr auto
-log10(T value)
-{
-	return log2(value) * LOG_10_2;
-}
-
-namespace detail
-{
-/**
- * Normalises an angle to the range [ 0, 2π ].
- */
-constexpr inline f64
-normalise_angle_around_pi(f64 angle)
-{
-	return angle - floor(angle / TWO_PI) * TWO_PI;
-}
-
-/**
- * Normalises an angle to the range [ -π, π ].
- */
-constexpr inline f64
-normalise_angle_around_zero(f64 angle)
-{
-	angle = normalise_angle_around_pi(angle);
-
-	if (angle > PI)
-	{
-		angle -= TWO_PI;
-	}
-
-	return angle;
-}
-};
-
-/**
- * Computes the sine of a given angle.
- */
+IMPORT("log10")
 f64
-sin(f64 angle)
+log10(f64 value);
+
+/**
+ * Returns the base-10 logarithm of a floating point number.
+ * TODO: Make constexpr.
+ */
+f32
+log10(f32 value)
 {
-	// Use the Taylor series to compute the sine of an angle.
-	// The series is: sin(x) = x - x^3 / 3! + x^5 / 5! - x^7 / 7! + ...
-	// The series converges very quickly, so a couple of terms are enough.
-	// TODO: research how many terms we need and research more efficient
-	// ways of doing this.
-
-	// Normalise the angle.
-
-	angle = detail::normalise_angle_around_zero(angle);
-
-	// Compute the sine.
-
-	f64 first_power   = angle;
-	f64 third_power   = first_power * angle * angle;
-	f64 fifth_power   = third_power * angle * angle;
-	f64 seventh_power = fifth_power * angle * angle;
-
-	return first_power
-		- third_power   / 6.0
-		+ fifth_power   / 120.0
-		- seventh_power / 5040.0;
+	return log10((f64) value);
 }
+
+/**
+ * Returns the cosine of a floating point number.
+ * Input angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+IMPORT("cos")
+f64
+cos(f64 value);
+
+/**
+ * Returns the cosine of a floating point number.
+ * Input angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+f32
+cos(f32 value)
+{
+	return cos((f64) value);
+}
+
+/**
+ * Returns the sine of a floating point number.
+ * Input angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+IMPORT("sin")
+f64
+sin(f64 value);
+
+/**
+ * Returns the sine of a floating point number.
+ * Input angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+f32
+sin(f32 value)
+{
+	return sin((f64) value);
+}
+
+/**
+ * Returns the tangent of a floating point number.
+ * Input angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+IMPORT("tan")
+f64
+tan(f64 value);
+
+/**
+ * Returns the tangent of a floating point number.
+ * Input angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+f32
+tan(f32 value)
+{
+	return tan((f64) value);
+}
+
+/**
+ * Returns the inverse cosine of a floating point number.
+ * Output angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+IMPORT("acos")
+f64
+acos(f64 value);
+
+/**
+ * Returns the inverse cosine of a floating point number.
+ * Output angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+f32
+acos(f32 value)
+{
+	return acos((f64) value);
+}
+
+/**
+ * Returns the inverse sine of a floating point number.
+ * Output angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+IMPORT("asin")
+f64
+asin(f64 value);
+
+/**
+ * Returns the inverse sine of a floating point number.
+ * Output angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+f32
+asin(f32 value)
+{
+	return asin((f64) value);
+}
+
+/**
+ * Returns the inverse tangent of a floating point number.
+ * Output angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+IMPORT("atan")
+f64
+atan(f64 value);
+
+/**
+ * Returns the inverse tangent of a floating point number.
+ * Output angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+f32
+atan(f32 value)
+{
+	return atan((f64) value);
+}
+
+/**
+ * Returns the inverse tangent of a given ratio of y / x.
+ * Output angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+IMPORT("atan2")
+f64
+atan2(f64 y, f64 x);
+
+/**
+ * Returns the inverse tangent of a given ratio of y / x.
+ * Output angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+f32
+atan2(f32 y, f32 x)
+{
+	return atan2((f64) y, (f64) x);
+}
+
+/**
+ * Returns the hyperbolic cosine of a floating point number.
+ * Input angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+IMPORT("cosh")
+f64
+cosh(f64 value);
+
+/**
+ * Returns the hyperbolic cosine of a floating point number.
+ * Input angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+f32
+cosh(f32 value)
+{
+	return cosh((f64) value);
+}
+
+/**
+ * Returns the hyperbolic sine of a floating point number.
+ * Input angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+IMPORT("sinh")
+f64
+sinh(f64 value);
+
+/**
+ * Returns the hyperbolic sine of a floating point number.
+ * Input angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+f32
+sinh(f32 value)
+{
+	return sinh((f64) value);
+}
+
+/**
+ * Returns the hyperbolic tangent of a floating point number.
+ * Input angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+IMPORT("tanh")
+f64
+tanh(f64 value);
+
+/**
+ * Returns the hyperbolic tangent of a floating point number.
+ * Input angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+f32
+tanh(f32 value)
+{
+	return tanh((f64) value);
+}
+
+/**
+ * Returns the inverse hyperbolic cosine of a floating point number.
+ * Output angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+IMPORT("acosh")
+f64
+acosh(f64 value);
+
+/**
+ * Returns the inverse hyperbolic cosine of a floating point number.
+ * Output angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+f32
+acosh(f32 value)
+{
+	return acosh((f64) value);
+}
+
+/**
+ * Returns the inverse hyperbolic sine of a floating point number.
+ * Output angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+IMPORT("asinh")
+f64
+asinh(f64 value);
+
+/**
+ * Returns the inverse hyperbolic sine of a floating point number.
+ * Output angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+f32
+asinh(f32 value)
+{
+	return asinh((f64) value);
+}
+
+/**
+ * Returns the inverse hyperbolic tangent of a floating point number.
+ * Output angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+IMPORT("atanh")
+f64
+atanh(f64 value);
+
+/**
+ * Returns the inverse hyperbolic tangent of a floating point number.
+ * Output angle is measured in radians.
+ * TODO: Make constexpr.
+ */
+f32
+atanh(f32 value)
+{
+	return atanh((f64) value);
+}
+
+/**
+ * Returns the exponential of a floating point number (e^x).
+ * TODO: Make constexpr.
+ */
+IMPORT("exp")
+f64
+exp(f64 value);
+
+/**
+ * Returns the exponential of a floating point number (e^x).
+ * TODO: Make constexpr.
+ */
+f32
+exp(f32 value)
+{
+	return exp((f64) value);
+}
+
+/**
+ * Returns the exponential of a floating point number, minus one (e^x - 1).
+ * TODO: Make constexpr.
+ */
+IMPORT("expm1")
+f64
+expm1(f64 value);
+
+/**
+ * Returns the exponential of a floating point number, minus one (e^x - 1).
+ * TODO: Make constexpr.
+ */
+f32
+expm1(f32 value)
+{
+	return expm1((f64) value);
+}
+
+/**
+ * Returns the cube root of a floating point number.
+ * TODO: Make constexpr.
+ */
+IMPORT("cbrt")
+f64
+cbrt(f64 value);
+
+/**
+ * Returns the cube root of a floating point number.
+ * TODO: Make constexpr.
+ */
+f32
+cbrt(f32 value)
+{
+	return cbrt((f64) value);
+}
+
+/**
+ * Returns the hypothenuse of two floating point numbers.
+ * TODO: Make constexpr.
+ */
+IMPORT("hypot")
+f64
+hypot(f64 x, f64 y);
+
+/**
+ * Returns the hypothenuse of two floating point numbers.
+ * TODO: Make constexpr.
+ */
+f32
+hypot(f32 x, f32 y)
+{
+	return hypot((f64) x, (f64) y);
+}
+
 }; // namespace slaw
 
 #endif
