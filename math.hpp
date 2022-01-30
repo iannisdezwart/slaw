@@ -748,7 +748,7 @@ atan(f32 value)
 }
 
 /**
- * Returns the inverse tangent of a given ratio of y / x.
+ * Returns the inverse tangent of a given ratio y / x.
  * Output angle is measured in radians.
  * TODO: Make constexpr.
  */
@@ -757,7 +757,7 @@ f64
 atan2(f64 y, f64 x);
 
 /**
- * Returns the inverse tangent of a given ratio of y / x.
+ * Returns the inverse tangent of a given ratio y / x.
  * Output angle is measured in radians.
  * TODO: Make constexpr.
  */
