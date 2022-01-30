@@ -2,6 +2,8 @@
 #define SLAW_STRING_H
 
 #include "types.hpp"
+#include "math.hpp"
+#include "io.hpp"
 #include "vector.hpp"
 #include "util.hpp"
 
@@ -630,6 +632,173 @@ struct String : public Vector<char>
 		// Update the size.
 
 		size += pad_size;
+	}
+
+	/**
+	 * Converts an integer to a string.
+	 */
+	template <typename T>
+	static String
+	from_int(T i)
+	{
+		static_assert(is_integer<T>(), "Expected an integer type.");
+
+		if (i == 0)
+		{
+			return "0";
+		}
+
+		// If the number is negative, make it positive and remember
+		// that we have to add a '-' at the start of the string.
+
+		bool sign = i < 0;
+
+		if (sign)
+		{
+			i = -i;
+		}
+
+		String s;
+
+		// We reserve enough characters for the given integer type,
+		// plus one for the sign.
+		// The number of characters needed is equal to the logarithm
+		// of the max value of the given integer type, plus one.
+
+		const constexpr usize max_chars = log10i(max_value<T>()) + 2;
+		s.reserve(max_chars);
+
+		// Go through each digit of the integer, from least to most
+		// significant. We add each digit to the string.
+
+		while (i > 0)
+		{
+			s.push_back('0' + (i % 10));
+			i /= 10;
+		}
+
+		// Handle the sign.
+
+		if (sign)
+		{
+			s.push_back('-');
+			i = -i;
+		}
+
+		// The order of characters in the string is reversed,
+		// so we reverse it again.
+
+		s.reverse();
+		return s;
+	}
+
+	/**
+	 * Converts a floating point number to a string.
+	 * The number is rounded to the given number of decimal places.
+	 */
+	template <typename T>
+	static String
+	from_float(T f, usize precision = 6)
+	{
+		static_assert(is_float<T>(), "Expected a floating point type.");
+
+		// Handle special cases.
+
+		if (f == 0)
+		{
+			if (detail::stored_sign(f) == false)
+			{
+				return "0";
+			}
+			else
+			{
+				return "-0";
+			}
+		}
+
+		if (is_nan(f))
+		{
+			return "NaN";
+		}
+
+		if (f == Infinity<T>())
+		{
+			return "Infinity";
+		}
+
+		if (f == -Infinity<T>())
+		{
+			return "-Infinity";
+		}
+
+		// If the number is negative, make it positive and remember
+		// that we have to add a '-' at the start of the string.
+
+		bool sign = f < 0;
+
+		if (sign)
+		{
+			f = -f;
+		}
+
+		String s;
+
+		// We reserve enough characters for the given number, plus one
+		// for the sign, plus one for the decimal point, plus the given
+		// number of decimal places.
+
+		usize left_digits = floor(max(0.0, log10(f)) + 1);
+		usize max_chars = left_digits + precision + 2;
+		s.reserve(max_chars);
+
+		// Handle the sign.
+
+		if (sign)
+		{
+			s.push_back('-');
+		}
+
+		// Handle the rest of the number.
+
+		T digit_place = pow(10.0, left_digits - 1);
+
+		for (usize i = 0; i < left_digits + precision; i++)
+		{
+			// Get the digit.
+
+			i32 digit = floor(f / digit_place);
+
+			// If this is the last digit, check if we have to round.
+
+			if (i == left_digits + precision - 1)
+			{
+				i32 next_digit = floor(f / (digit_place / 10));
+
+				if (next_digit >= 5)
+				{
+					digit++;
+				}
+			}
+
+			// If we have reached the decimal point,
+			// we will add the decimal point to the string.
+
+			if (i == left_digits)
+			{
+				s.push_back('.');
+			}
+
+			// Add the digit to the string.
+
+			s.push_back('0' + digit);
+
+			// Remove the digit from the number.
+
+			f -= digit * digit_place;
+			digit_place /= 10;
+		}
+
+		return s;
 	}
 };
 }; // namespace slaw

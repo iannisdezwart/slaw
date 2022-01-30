@@ -257,6 +257,21 @@ trunc(T x)
 }
 
 /**
+ * Calculates the modulo of two floating point numbers.
+ */
+template <typename T>
+constexpr T
+fmod(T x, T y)
+{
+	if constexpr (!is_float<T>())
+	{
+		throw "Type is not a valid floating point type.";
+	}
+
+	return x - trunc(x / y) * y;
+}
+
+/**
  * Returns the popcount of a number.
  * This is defined as the number of bits that are set to 1.
  */
@@ -628,6 +643,100 @@ log10(f32 value)
 }
 
 /**
+ * Returns the base-2 logarithm of an integer,
+ * rounded down to the nearest integer.
+ * Zero and negative inputs evaluate to -1.
+ */
+template <typename T>
+constexpr inline T
+log2i(T value)
+{
+	if constexpr (is_signed<T>())
+	{
+		// If the type is signed and the value is smaller than 1,
+		// the logarithm does not exist, and we return -1 to indicate
+		// that.
+
+		if (value <= 0)
+		{
+			return -1;
+		}
+	}
+
+	// Count the number of leading zeroes.
+	// This is the floored logarithm of the number.
+
+	return (sizeof(T) * 8 - 1) - clz(value);
+}
+
+/**
+ * Returns the base-10 logarithm of an integer,
+ * rounded down to the nearest integer.
+ * Zero and negative inputs evaluate to -1.
+ */
+template <typename T>
+constexpr inline T
+log10i(T value)
+{
+	if constexpr (is_signed<T>())
+	{
+		// If the type is signed and the value is smaller than 1,
+		// the logarithm does not exist, and we return -1 to indicate
+		// that.
+
+		if (value <= 0)
+		{
+			return -1;
+		}
+	}
+
+	T result = 0;
+
+	// Check in what range the number falls into, using binary search.
+
+	if constexpr (sizeof(T) >= 8)
+	{
+		if (value >= 10000000000000000UL)
+		{
+			result += 16;
+			value /= 10000000000000000UL;
+		}
+	}
+
+	if constexpr (sizeof(T) >= 4)
+	{
+		if (value >= 100000000UL)
+		{
+			result += 8;
+			value /= 100000000UL;
+		}
+	}
+
+	if constexpr (sizeof(T) >= 2)
+	{
+		if (value >= 10000UL)
+		{
+			result += 4;
+			value /= 10000UL;
+		}
+	}
+
+	if (value >= 100UL)
+	{
+		result += 2;
+		value /= 100UL;
+	}
+
+	if (value >= 10UL)
+	{
+		result += 1;
+		value /= 10UL;
+	}
+
+	return result;
+}
+
+/**
  * Returns the cosine of a floating point number.
  * Input angle is measured in radians.
  * TODO: Make constexpr.
@@ -903,6 +1012,22 @@ f32
 exp(f32 value)
 {
 	return exp((f64) value);
+}
+
+/**
+ * Returns x raised to the power y.
+ */
+IMPORT("pow")
+f64
+pow(f64 x, f64 y);
+
+/**
+ * Returns x raised to the power y.
+ */
+f32
+pow(f32 x, f32 y)
+{
+	return pow((f64) x, (f64) y);
 }
 
 /**

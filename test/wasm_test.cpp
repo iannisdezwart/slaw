@@ -1,8 +1,15 @@
 #include "../slaw.hpp"
 
-EXPORT("log2")
-f64
-log2(f64 v)
+EXPORT("from_float")
+void
+from_float(f64 n, usize p = 6)
 {
-	return slaw::log2(v);
+	slaw::print(slaw::String::from_float(n, p));
+}
+
+EXPORT("from_int")
+void
+from_int(i32 n)
+{
+	slaw::print(slaw::String::from_int(n));
 }

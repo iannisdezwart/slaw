@@ -86,6 +86,21 @@ is_integer()
 }
 
 /**
+ * A compile-time function that returns true if the type is a floating-point.
+ */
+template <typename T>
+constexpr bool
+is_float()
+{
+	if constexpr (is_same<T, f32>() || is_same<T, f64>())
+	{
+		return true;
+	}
+
+	return false;
+}
+
+/**
  * A compile-time function that returns true if the type is signed.
  * Throws a compile-time error if the type is not a valid integer type.
  */
@@ -416,8 +431,25 @@ const constexpr f32 Infinity32 =
 const constexpr f64 Infinity64 =
 	detail::interpret_int_as_float((i64) 0x7FF0000000000000);
 
-// Infinity for a 64-bit floating point type.
-const constexpr f64 Infinity = Infinity64;
+/**
+ * Infinity for a given floating point type.
+ */
+template <typename T>
+constexpr T
+Infinity()
+{
+	if constexpr (is_same<T, f32>())
+	{
+		return Infinity32;
+	}
+
+	if constexpr (is_same<T, f64>())
+	{
+		return Infinity64;
+	}
+
+	throw "Expected floating point type.";
+}
 
 /**
  * Function that checks if a 32-bit floating point number is not a number.
@@ -445,8 +477,25 @@ const constexpr f32 Epsilon32 = 1.1920928955078125e-07f;
 // The lowest positive value for a 64-bit floating point type.
 const constexpr f64 Epsilon64 = 2.220446049250313e-16;
 
-// The lowest positive value for a 64-bit floating point type.
-const constexpr f64 Epsilon = Epsilon64;
+/**
+ * The lowest positive value for a given floating point type.
+ */
+template <typename T>
+constexpr T
+Epsilon()
+{
+	if constexpr (is_same<T, f32>())
+	{
+		return Epsilon32;
+	}
+
+	if constexpr (is_same<T, f64>())
+	{
+		return Epsilon64;
+	}
+
+	throw "Expected floating point type.";
+}
 
 // An NaN for a 32-bit floating point type.
 // Note that equality comparisons with NaN always resolve to false.

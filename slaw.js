@@ -27,6 +27,7 @@ class SlawEnvironment
 			asinh: Math.asinh,
 			atanh: Math.atanh,
 			exp: Math.exp,
+			pow: Math.pow,
 			expm1: Math.expm1,
 			cbrt: Math.cbrt,
 			hypot: Math.hypot
