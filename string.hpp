@@ -810,18 +810,24 @@ struct String : public Vector<char>
 		// Handle the rest of the number.
 
 		T digit_place = pow(10.0, left_digits - 1);
+		i32 digit;
 
 		for (usize i = 0; i < left_digits + precision; i++)
 		{
 			// Get the digit.
 
-			i32 digit = floor(f / digit_place);
+			digit = floor(f / digit_place);
+
+			// Remove the digit from the number.
+
+			f -= digit * digit_place;
+			digit_place /= 10;
 
 			// If this is the last digit, check if we have to round.
 
 			if (i == left_digits + precision - 1)
 			{
-				i32 next_digit = floor(f / (digit_place / 10));
+				i32 next_digit = floor(f / digit_place);
 
 				if (next_digit >= 5)
 				{
@@ -840,11 +846,6 @@ struct String : public Vector<char>
 			// Add the digit to the string.
 
 			s.push_back('0' + digit);
-
-			// Remove the digit from the number.
-
-			f -= digit * digit_place;
-			digit_place /= 10;
 		}
 
 		return s;

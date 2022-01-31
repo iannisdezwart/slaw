@@ -1,28 +1,18 @@
 #include "../slaw.hpp"
 
-EXPORT("string_test")
+EXPORT("from_float")
 void
-string_test()
+from_float(f64 n, usize p = 6)
 {
-	slaw::String hi = "Hi";
-	slaw::String world = "World";
-	slaw::String str = hi + ", " + world + "!";
-	slaw::print(str);
+	slaw::print(slaw::String::from_float(n, p));
 }
 
-// EXPORT("from_float")
-// void
-// from_float(f64 n, usize p = 6)
-// {
-// 	slaw::print(slaw::String::from_float(n, p));
-// }
-
-// EXPORT("from_int")
-// void
-// from_int(i32 n)
-// {
-// 	slaw::print(slaw::String::from_int(n));
-// }
+EXPORT("from_int")
+void
+from_int(i32 n)
+{
+	slaw::print(slaw::String::from_int(n));
+}
 
 EXPORT("heap_size")
 usize
