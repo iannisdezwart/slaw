@@ -38,13 +38,14 @@ struct Vector
 	usize capacity;
 
 	/**
-	 * Constructs a new vector of a given initial size.
+	 * Constructs a new vector with a given initial capacity.
 	 *
 	 * - Time complexity: O(1).
 	 * - Space complexity: O(1).
 	 */
-	Vector(usize initial_size = min_capacity)
-		: data(new T[initial_size]), size(0), capacity(initial_size) {}
+	Vector(usize initial_capacity = min_capacity)
+		: data(new T[initial_capacity]), size(0),
+			capacity(initial_capacity) {}
 
 	/**
 	 * Constructs a new vector by taking a copy of an existing vector.

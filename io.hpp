@@ -11,8 +11,33 @@ namespace slaw::detail
  * JavaScript function that evaluates a string of JavaScript code.
  */
 IMPORT("eval")
-extern "C" void
-eval_helper(const char *code, usize length);
+void
+eval(const char *code, usize length);
+
+/**
+ * JavaScript function that prints a string.
+ */
+IMPORT("print_str")
+void
+print_str(const char *str, usize length);
+
+/**
+ * Wrapper around `print_str` that prints a character array without having
+ * to specify the length.
+ */
+template <usize N>
+inline void
+print(const char (&str)[N])
+{
+	print_str(str, N - 1);
+}
+
+/**
+ * JavaScript function that prints a number.
+ */
+IMPORT("print")
+void
+print(double number);
 };
 
 namespace slaw
@@ -23,7 +48,7 @@ namespace slaw
 inline void
 eval(const String &str)
 {
-	detail::eval_helper(str.data, str.size);
+	detail::eval(str.data, str.size);
 }
 
 /**
@@ -32,7 +57,7 @@ eval(const String &str)
 inline void
 print(const String &str)
 {
-	eval("console.log('" + str + "')");
+	detail::print_str(str.data, str.size);
 }
 };
 

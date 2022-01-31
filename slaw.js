@@ -8,6 +8,8 @@ class SlawEnvironment
 		this.env = {
 			brk: this.brk.bind(this),
 			eval: this.eval.bind(this),
+			print_str: this.printStr.bind(this),
+			print: console.log,
 			ln: Math.log,
 			ln1p: Math.log1p,
 			log2: Math.log2,
@@ -55,6 +57,12 @@ class SlawEnvironment
 	{
 		const str = this.read(ptr, size)
 		eval(str)
+	}
+
+	printStr(ptr, size)
+	{
+		const str = this.read(ptr, size)
+		console.log(str)
 	}
 
 	read(ptr, size)

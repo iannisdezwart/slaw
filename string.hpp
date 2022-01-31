@@ -16,13 +16,13 @@ namespace slaw
 struct String : public Vector<char>
 {
 	/**
-	 * Constructs an empty string.
+	 * Constructs an empty string with a given initial capacity.
 	 *
 	 * - Time complexity: O(1).
 	 * - Space complexity: O(1).
 	 */
-	String(usize initial_size = min_capacity)
-		: Vector<char>(initial_size) {}
+	String(usize initial_capacity = min_capacity)
+		: Vector<char>(initial_capacity) {}
 
 	/**
 	 * Constructs a string by taking a copy of an existing string.
@@ -84,7 +84,7 @@ struct String : public Vector<char>
 	 */
 	template <usize N>
 	String(const char (&source)[N])
-		: Vector<char>(N)
+		: Vector<char>(N - 1)
 	{
 		for (usize i = 0; i < N - 1; i++)
 		{
@@ -183,8 +183,21 @@ struct String : public Vector<char>
 	operator+(char c)
 	const
 	{
-		String out(*this);
-		out += c;
+		// Create a new string of the correct size.
+
+		String out(size + 1);
+		out.size = size + 1;
+
+		// Copy the left hand side into the new string.
+
+		for (usize i = 0; i < size; i++)
+		{
+			out[i] = data[i];
+		}
+
+		// Copy the extra character into the new string.
+
+		out[size] = c;
 		return out;
 	}
 
@@ -198,8 +211,25 @@ struct String : public Vector<char>
 	operator+(const String &s)
 	const
 	{
-		String out(*this);
-		out += s;
+		// Create a new string of the correct size.
+
+		String out(size + s.size);
+		out.size = size + s.size;
+
+		// Copy the left hand side into the new string.
+
+		for (usize i = 0; i < size; i++)
+		{
+			out[i] = data[i];
+		}
+
+		// Copy the right hand side into the new string.
+
+		for (usize i = 0; i < s.size; i++)
+		{
+			out[size + i] = s[i];
+		}
+
 		return out;
 	}
 
@@ -214,8 +244,25 @@ struct String : public Vector<char>
 	operator+(const char (&s)[N])
 	const
 	{
-		String out(*this);
-		out += s;
+		// Create a new string of the correct size.
+
+		String out(size + N - 1);
+		out.size = size + N - 1;
+
+		// Copy the left hand side into the new string.
+
+		for (usize i = 0; i < size; i++)
+		{
+			out[i] = data[i];
+		}
+
+		// Copy the right hand side into the new string.
+
+		for (usize i = 0; i < N - 1; i++)
+		{
+			out[size + i] = s[i];
+		}
+
 		return out;
 	}
 
@@ -636,6 +683,9 @@ struct String : public Vector<char>
 
 	/**
 	 * Converts an integer to a string.
+	 * TODO: Make this function more space efficient. Compiling a file
+	 * with just this function exported with `-O3` yields a binary of
+	 * about 3.9kB. `-Os` yields a binary of about 2.2kB.
 	 */
 	template <typename T>
 	static String
@@ -658,15 +708,13 @@ struct String : public Vector<char>
 			i = -i;
 		}
 
-		String s;
-
 		// We reserve enough characters for the given integer type,
 		// plus one for the sign.
 		// The number of characters needed is equal to the logarithm
 		// of the max value of the given integer type, plus one.
 
 		const constexpr usize max_chars = log10i(max_value<T>()) + 2;
-		s.reserve(max_chars);
+		String s(max_chars);
 
 		// Go through each digit of the integer, from least to most
 		// significant. We add each digit to the string.
@@ -695,6 +743,9 @@ struct String : public Vector<char>
 	/**
 	 * Converts a floating point number to a string.
 	 * The number is rounded to the given number of decimal places.
+	 * TODO: Make this function more space efficient. Compiling a file
+	 * with just this function exported with `-O3` yields a binary of
+	 * about 4.4kB. `-Os` yields a binary of about 2.9kB.
 	 */
 	template <typename T>
 	static String
@@ -741,15 +792,13 @@ struct String : public Vector<char>
 			f = -f;
 		}
 
-		String s;
-
 		// We reserve enough characters for the given number, plus one
 		// for the sign, plus one for the decimal point, plus the given
 		// number of decimal places.
 
 		usize left_digits = floor(max(0.0, log10(f)) + 1);
 		usize max_chars = left_digits + precision + 2;
-		s.reserve(max_chars);
+		String s(max_chars);
 
 		// Handle the sign.
 

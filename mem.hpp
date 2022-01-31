@@ -6,6 +6,7 @@
 #ifndef NO_MEMORY_ALLOCATOR
 
 #include "types.hpp"
+#include "export.hpp"
 
 /**
  * This namespace contains functions for low-level memory management.
@@ -40,7 +41,8 @@ extern "C" u8 __heap_base;
  * the smallest multiple of the page size (65536) that fits the current size
  * of the heap plus the missing memory.
  */
-extern "C" u8 *
+IMPORT("brk")
+u8 *
 brk(usize extra_mem);
 
 constexpr const usize PAGE_SIZE = 65536;
