@@ -8,7 +8,6 @@ class SlawEnvironment
 		this.env = {
 			brk: this.brk.bind(this),
 			eval: this.eval.bind(this),
-			...Math,
 			ln: Math.log,
 			ln1p: Math.log1p,
 			log2: Math.log2,

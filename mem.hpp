@@ -1,6 +1,8 @@
 #ifndef SLAW_MEM_H
 #define SLAW_MEM_H
 
+// Allow the memory allocator to be disabled.
+// Useful for debugging natively compiled code.
 #ifndef NO_MEMORY_ALLOCATOR
 
 #include "types.hpp"
@@ -12,7 +14,7 @@
  *
  * This namespace contains a couple of global variables that are used
  * by some of the functions in this namespace.
- * These variables are:
+ * These variables are
  * - `slaw::mem::heap_end`: The end of the heap segment.
  *   Before any allocations are made, this variable can be overwritten for
  *   testing purposes.
@@ -22,14 +24,12 @@
  */
 namespace slaw::mem
 {
-extern "C"
-{
 // The WebAssembly compiler provides us with a global label that we can use
 // to refer to the base of the heap.
 // We can take the address of this global label and use it as a pointer to
 // the start of the heap memory section.
 // The heap grows upwards and we can grow it as much as we want.
-extern u8 __heap_base;
+extern "C" u8 __heap_base;
 
 /**
  * JavaScript function that adjusts the program break.
@@ -40,9 +40,8 @@ extern u8 __heap_base;
  * the smallest multiple of the page size (65536) that fits the current size
  * of the heap plus the missing memory.
  */
-extern u8 *
+extern "C" u8 *
 brk(usize extra_mem);
-};
 
 constexpr const usize PAGE_SIZE = 65536;
 constexpr const usize INITIAL_PAGES = 2;
@@ -292,7 +291,7 @@ alloc(usize size)
 
 	FreeHeapBlockHeader *free_block = first_free_block;
 
-	while (free_block != nullptr && free_block->size < size)
+	while (free_block != nullptr && free_block->size <= size)
 	{
 		free_block = free_block->next_free_block;
 	}
@@ -309,7 +308,8 @@ alloc(usize size)
 	// The first part is the remaining free block.
 	// The second part is the block we are allocating.
 	// TODO: Consider changing the sizeof(HeapBlockHeader) to a constant
-	// that can be modified.
+	// that can be modified. This is helpful because it allows us to set
+	// a minimum size for a free block caused by a split.
 
 	if (free_block->size - size >= sizeof(HeapBlockHeader))
 	{
@@ -506,6 +506,19 @@ free(void *ptr)
 
 	if (first_free_block == nullptr)
 	{
+		// If this was also the last block on the heap,
+		// we simply discard the block.
+
+		if (block->get_end_ptr() >= (u8 *) heap_end)
+		{
+			heap_end = (u8 *) block;
+			return;
+		}
+
+		// Otherwise, we will have to mark this block as the first
+		// free block, and mark the previous and next free blocks
+		// as non-existent.
+
 		first_free_block = block;
 
 		block->prev_free_block = nullptr;

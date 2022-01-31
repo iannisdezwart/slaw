@@ -6,6 +6,7 @@
 #include "simd.hpp"
 #include "io.hpp"
 #include "mem.hpp"
+#include "mem_debug.hpp"
 #include "export.hpp"
 #include "math.hpp"
 #include "vector.hpp"

@@ -7,16 +7,13 @@
 
 namespace slaw::detail
 {
-extern "C"
-{
 /**
  * JavaScript function that evaluates a string of JavaScript code.
  */
 IMPORT("eval")
-extern void
+extern "C" void
 eval_helper(const char *code, usize length);
 };
-}; // namespace slaw::detail
 
 namespace slaw
 {
@@ -37,6 +34,6 @@ print(const String &str)
 {
 	eval("console.log('" + str + "')");
 }
-}; // namespace slaw
+};
 
 #endif
