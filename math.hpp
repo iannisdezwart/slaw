@@ -1,6 +1,7 @@
 #ifndef SLAW_MATH_H
 #define SLAW_MATH_H
 
+#include "export.hpp"
 #include "types.hpp"
 
 namespace slaw
@@ -89,21 +90,15 @@ template <typename T>
 constexpr inline T
 abs(T n)
 {
-	if constexpr (is_integer<T>() && is_unsigned<T>())
-	{
-		// If the type is unsigned, just return the value.
-
-		return n;
-	}
-
-	// If the type is signed, we return the absolute value.
-
 	// This doesn't have to be optimised further, because the compiler
 	// will optimise this as much as possible.
 	// I tested a couple of different implementation for the `abs` function
 	// on Godbolt's compiler explorer, and all of them were optimised to
 	// the same WASM code when using `-O1` or higher.
 	// https://godbolt.org/z/fsjYvr6db
+
+	// Note that the compiler will optimise away the `n < 0` branch
+	// for unsigned numbers.
 
 	if (n < 0)
 	{
@@ -122,6 +117,8 @@ template <typename T>
 constexpr i64
 floor(T x)
 {
+	static_assert(is_float<T>(), "Type is not a floating point type.");
+
 	// If the function is being evaluated at compile time,
 	// we compute the floor manually.
 
@@ -149,8 +146,6 @@ floor(T x)
 	{
 		return __builtin_floor(x);
 	}
-
-	throw "Type is not a valid floating point type.";
 }
 
 /**
@@ -160,6 +155,8 @@ template <typename T>
 constexpr i64
 ceil(T x)
 {
+	static_assert(is_float<T>(), "Type is not a floating point type.");
+
 	// If the function is being evaluated at compile time,
 	// we compute the ceil manually.
 
@@ -187,8 +184,6 @@ ceil(T x)
 	{
 		return __builtin_ceil(x);
 	}
-
-	throw "Type is not a valid floating point type.";
 }
 
 /**
@@ -199,6 +194,8 @@ template <typename T>
 constexpr i64
 round(T x)
 {
+	static_assert(is_float<T>(), "Type is not a floating point type.");
+
 	// If the function is being evaluated at compile time,
 	// we round the number manually.
 
@@ -219,8 +216,6 @@ round(T x)
 	{
 		return __builtin_round(x);
 	}
-
-	throw "Type is not a valid floating point type.";
 }
 
 /**
@@ -232,6 +227,8 @@ template <typename T>
 constexpr i64
 trunc(T x)
 {
+	static_assert(is_float<T>(), "Type is not a floating point type.");
+
 	// If the function is being evaluated at compile time,
 	// we truncate the number manually.
 
@@ -252,8 +249,6 @@ trunc(T x)
 	{
 		return __builtin_trunc(x);
 	}
-
-	throw "Type is not a valid floating point type.";
 }
 
 /**
@@ -263,10 +258,7 @@ template <typename T>
 constexpr T
 fmod(T x, T y)
 {
-	if constexpr (!is_float<T>())
-	{
-		throw "Type is not a valid floating point type.";
-	}
+	static_assert(is_float<T>(), "Type is not a floating point type.");
 
 	return x - trunc(x / y) * y;
 }
@@ -312,6 +304,8 @@ template <typename T>
 constexpr inline T
 clz(T n)
 {
+	static_assert(is_integer<T>(), "Type is not an integer type.");
+
 	// Using builtins for 16, 32 and 64 bit integers.
 	// 8 bit integers have to be implemented manually, but are compiled
 	// into the same WASM code as the 16 bit built-in.
@@ -335,8 +329,6 @@ clz(T n)
 	{
 		return (__builtin_clz(n & 0xFF) - 24) & 0xFF;
 	}
-
-	throw "Type is not a valid integer type.";
 }
 /**
  * Returns the number of trailing zeroes of a number.
@@ -353,6 +345,8 @@ template <typename T>
 constexpr inline T
 ctz(T n)
 {
+	static_assert(is_integer<T>(), "Type is not an integer type.");
+
 	// Using builtins for 16, 32 and 64 bit integers.
 	// 8 bit integers will use the 32 bit builtin, but we will ensure
 	// we get the correct result by ORing the input with 256.
@@ -382,8 +376,6 @@ ctz(T n)
 
 		return __builtin_ctz((i32) n | 0x100);
 	}
-
-	throw "Type is not a valid integer type.";
 }
 
 namespace detail
@@ -580,7 +572,7 @@ ln(f64 value);
  * Returns the natural logarithm of a floating point number.
  * TODO: Make constexpr.
  */
-f32
+inline f32
 ln(f32 value)
 {
 	return ln((f64) value);
@@ -600,7 +592,7 @@ ln1p(f64 value);
  * (ln(1 + value)).
  * TODO: Make constexpr.
  */
-f32
+inline f32
 ln1p(f32 value)
 {
 	return ln1p((f64) value);
@@ -618,7 +610,7 @@ log2(f64 value);
  * Returns the base-2 logarithm of a floating point number.
  * TODO: Make constexpr.
  */
-f32
+inline f32
 log2(f32 value)
 {
 	return log2((f64) value);
@@ -636,7 +628,7 @@ log10(f64 value);
  * Returns the base-10 logarithm of a floating point number.
  * TODO: Make constexpr.
  */
-f32
+inline f32
 log10(f32 value)
 {
 	return log10((f64) value);
@@ -750,7 +742,7 @@ cos(f64 value);
  * Input angle is measured in radians.
  * TODO: Make constexpr.
  */
-f32
+inline f32
 cos(f32 value)
 {
 	return cos((f64) value);
@@ -770,7 +762,7 @@ sin(f64 value);
  * Input angle is measured in radians.
  * TODO: Make constexpr.
  */
-f32
+inline f32
 sin(f32 value)
 {
 	return sin((f64) value);
@@ -790,7 +782,7 @@ tan(f64 value);
  * Input angle is measured in radians.
  * TODO: Make constexpr.
  */
-f32
+inline f32
 tan(f32 value)
 {
 	return tan((f64) value);
@@ -810,7 +802,7 @@ acos(f64 value);
  * Output angle is measured in radians.
  * TODO: Make constexpr.
  */
-f32
+inline f32
 acos(f32 value)
 {
 	return acos((f64) value);
@@ -830,7 +822,7 @@ asin(f64 value);
  * Output angle is measured in radians.
  * TODO: Make constexpr.
  */
-f32
+inline f32
 asin(f32 value)
 {
 	return asin((f64) value);
@@ -850,7 +842,7 @@ atan(f64 value);
  * Output angle is measured in radians.
  * TODO: Make constexpr.
  */
-f32
+inline f32
 atan(f32 value)
 {
 	return atan((f64) value);
@@ -870,7 +862,7 @@ atan2(f64 y, f64 x);
  * Output angle is measured in radians.
  * TODO: Make constexpr.
  */
-f32
+inline f32
 atan2(f32 y, f32 x)
 {
 	return atan2((f64) y, (f64) x);
@@ -890,7 +882,7 @@ cosh(f64 value);
  * Input angle is measured in radians.
  * TODO: Make constexpr.
  */
-f32
+inline f32
 cosh(f32 value)
 {
 	return cosh((f64) value);
@@ -910,7 +902,7 @@ sinh(f64 value);
  * Input angle is measured in radians.
  * TODO: Make constexpr.
  */
-f32
+inline f32
 sinh(f32 value)
 {
 	return sinh((f64) value);
@@ -930,7 +922,7 @@ tanh(f64 value);
  * Input angle is measured in radians.
  * TODO: Make constexpr.
  */
-f32
+inline f32
 tanh(f32 value)
 {
 	return tanh((f64) value);
@@ -950,7 +942,7 @@ acosh(f64 value);
  * Output angle is measured in radians.
  * TODO: Make constexpr.
  */
-f32
+inline f32
 acosh(f32 value)
 {
 	return acosh((f64) value);
@@ -970,7 +962,7 @@ asinh(f64 value);
  * Output angle is measured in radians.
  * TODO: Make constexpr.
  */
-f32
+inline f32
 asinh(f32 value)
 {
 	return asinh((f64) value);
@@ -990,7 +982,7 @@ atanh(f64 value);
  * Output angle is measured in radians.
  * TODO: Make constexpr.
  */
-f32
+inline f32
 atanh(f32 value)
 {
 	return atanh((f64) value);
@@ -1008,7 +1000,7 @@ exp(f64 value);
  * Returns the exponential of a floating point number (e^x).
  * TODO: Make constexpr.
  */
-f32
+inline f32
 exp(f32 value)
 {
 	return exp((f64) value);
@@ -1024,7 +1016,7 @@ pow(f64 x, f64 y);
 /**
  * Returns x raised to the power y.
  */
-f32
+inline f32
 pow(f32 x, f32 y)
 {
 	return pow((f64) x, (f64) y);
@@ -1042,7 +1034,7 @@ expm1(f64 value);
  * Returns the exponential of a floating point number, minus one (e^x - 1).
  * TODO: Make constexpr.
  */
-f32
+inline f32
 expm1(f32 value)
 {
 	return expm1((f64) value);
@@ -1060,7 +1052,7 @@ cbrt(f64 value);
  * Returns the cube root of a floating point number.
  * TODO: Make constexpr.
  */
-f32
+inline f32
 cbrt(f32 value)
 {
 	return cbrt((f64) value);
@@ -1078,7 +1070,7 @@ hypot(f64 x, f64 y);
  * Returns the hypothenuse of two floating point numbers.
  * TODO: Make constexpr.
  */
-f32
+inline f32
 hypot(f32 x, f32 y)
 {
 	return hypot((f64) x, (f64) y);

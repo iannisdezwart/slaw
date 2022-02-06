@@ -108,6 +108,8 @@ template <typename T>
 constexpr bool
 is_signed()
 {
+	static_assert(is_integer<T>(), "Type is not an integer.");
+
 	if constexpr (is_same<T, u8>() || is_same<T, u16>()
 		|| is_same<T, u32>() || is_same<T, u64>())
 	{
@@ -119,8 +121,6 @@ is_signed()
 	{
 		return true;
 	}
-
-	throw "Type is not an integer.";
 }
 
 /**
@@ -144,6 +144,9 @@ template <typename T>
 constexpr T
 min_value()
 {
+	static_assert(is_integer<T>() || is_float<T>(),
+		"Type is not an integer or floating point type.");
+
 	if constexpr (is_same<T, u8>() || is_same<T, u16>()
 		|| is_same<T, u32>() || is_same<T, u64>())
 	{
@@ -168,8 +171,6 @@ min_value()
 	{
 		return -1.7976931348623158e+308;
 	}
-
-	throw "Type is not an integer or floating point type.";
 }
 
 /**
@@ -182,6 +183,9 @@ template <typename T>
 constexpr T
 max_value()
 {
+	static_assert(is_integer<T>() || is_float<T>(),
+		"Type is not an integer or floating point type.");
+
 	if constexpr (is_same<T, u8>() || is_same<T, u16>()
 		|| is_same<T, u32>() || is_same<T, u64>())
 	{
@@ -209,8 +213,6 @@ max_value()
 	{
 		return 1.7976931348623158e+308;
 	}
-
-	throw "Type is not an integer or floating point type.";
 }
 
 /**
@@ -438,6 +440,8 @@ template <typename T>
 constexpr T
 Infinity()
 {
+	static_assert(is_float<T>(), "Type is not a floating point type.");
+
 	if constexpr (is_same<T, f32>())
 	{
 		return Infinity32;
@@ -447,8 +451,6 @@ Infinity()
 	{
 		return Infinity64;
 	}
-
-	throw "Expected floating point type.";
 }
 
 /**
@@ -479,11 +481,14 @@ const constexpr f64 Epsilon64 = 2.220446049250313e-16;
 
 /**
  * The lowest positive value for a given floating point type.
+ * Throws an error if the type is not a floating point type.
  */
 template <typename T>
 constexpr T
 Epsilon()
 {
+	static_assert(is_float<T>(), "Type is not a floating point type.");
+
 	if constexpr (is_same<T, f32>())
 	{
 		return Epsilon32;
@@ -493,8 +498,6 @@ Epsilon()
 	{
 		return Epsilon64;
 	}
-
-	throw "Expected floating point type.";
 }
 
 // An NaN for a 32-bit floating point type.
