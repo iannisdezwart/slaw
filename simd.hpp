@@ -301,6 +301,21 @@ floor(const T &v)
 }
 
 /**
+ * Performs an element-wise square root operation on a SIMD vector.
+ * Each element is the square root of the corresponding element of the
+ * input vector.
+ */
+template <typename T>
+constexpr T
+sqrt(const T &v)
+{
+	static_assert(is_float<simd_element_type_of<T>>(),
+		"SIMD vector does not hold floating-point types.");
+
+	return each(v, slaw::sqrt);
+}
+
+/**
  * Sums the elements of a SIMD vector.
  */
 template <typename T>
