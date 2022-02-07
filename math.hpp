@@ -114,7 +114,7 @@ abs(T n)
  * * .3 -> 0, -.3 -> -1
  */
 template <typename T>
-constexpr i64
+constexpr T
 floor(T x)
 {
 	static_assert(is_float<T>(), "Type is not a floating point type.");
@@ -131,7 +131,7 @@ floor(T x)
 			result--;
 		}
 
-		return result;
+		return (i64) result;
 	}
 
 	// If the function is not evaluated at compile time,
@@ -152,7 +152,7 @@ floor(T x)
  * Rounds the given number up to the nearest integer.
  */
 template <typename T>
-constexpr i64
+constexpr T
 ceil(T x)
 {
 	static_assert(is_float<T>(), "Type is not a floating point type.");
@@ -169,7 +169,7 @@ ceil(T x)
 			result++;
 		}
 
-		return result;
+		return (i64) result;
 	}
 
 	// If the function is not evaluated at compile time,
@@ -191,7 +191,7 @@ ceil(T x)
  * .50000... and above is rounded up, .49999... and below is rounded down.
  */
 template <typename T>
-constexpr i64
+constexpr T
 round(T x)
 {
 	static_assert(is_float<T>(), "Type is not a floating point type.");
@@ -201,7 +201,7 @@ round(T x)
 
 	if (__builtin_is_constant_evaluated())
 	{
-		return floor(x + 0.5);
+		return (i64) floor(x + 0.5);
 	}
 
 	// If the function is not evaluated at compile time,
@@ -224,7 +224,7 @@ round(T x)
  * * 3.4 -> 3, -3.4 -> 3
  */
 template <typename T>
-constexpr i64
+constexpr T
 trunc(T x)
 {
 	static_assert(is_float<T>(), "Type is not a floating point type.");
@@ -234,7 +234,7 @@ trunc(T x)
 
 	if (__builtin_is_constant_evaluated())
 	{
-		return x;
+		return (i64) x;
 	}
 
 	// If the function is not evaluated at compile time,
@@ -480,7 +480,7 @@ template <typename T>
 constexpr inline T
 gcd(T a, T b)
 {
-	if constexpr (is_unsigned<T>())
+	if constexpr (is_unsigned_integer<T>())
 	{
 		// If the type is unsigned,
 		// we can simply call the gcd implementation.
@@ -488,7 +488,7 @@ gcd(T a, T b)
 		return detail::gcd_impl(a, b);
 	}
 
-	if constexpr (is_signed<T>())
+	if constexpr (is_signed_integer<T>())
 	{
 		// If the type is unsigned,
 		// we have to ensure that the numbers are positive.
@@ -643,7 +643,7 @@ template <typename T>
 constexpr inline T
 log2i(T value)
 {
-	if constexpr (is_signed<T>())
+	if constexpr (is_signed_integer<T>())
 	{
 		// If the type is signed and the value is smaller than 1,
 		// the logarithm does not exist, and we return -1 to indicate
@@ -670,7 +670,7 @@ template <typename T>
 constexpr inline T
 log10i(T value)
 {
-	if constexpr (is_signed<T>())
+	if constexpr (is_signed_integer<T>())
 	{
 		// If the type is signed and the value is smaller than 1,
 		// the logarithm does not exist, and we return -1 to indicate
