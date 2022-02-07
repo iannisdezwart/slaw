@@ -156,6 +156,107 @@ max(const T &a, const T &b)
 }
 
 /**
+ * Performs an element-wise absolute value operation on a SIMD vector.
+ * The output of each element is the absolute value of the corresponding
+ * element of the input vector.
+ */
+template <typename T>
+constexpr T
+abs(const T &a)
+{
+	static_assert(simd_vector_size<T>() != 0,
+		"Type is not a SIMD vector type.");
+
+	// We can't use `__builtin_elementwise_abs` because it isn't fully
+	// supported in recent versions of clang, and it won't work at
+	// compile-time. We will do a dumb hard-coded absolute value
+	// operation on each element instead. This will be optimised down
+	// to a single vector instruction by the compiler.
+	// https://godbolt.org/z/4zrzs573E
+
+	if constexpr (simd_vector_size<T>() == 16)
+	{
+		return {
+			slaw::abs(a[0]),   slaw::abs(a[1]),
+			slaw::abs(a[2]),   slaw::abs(a[3]),
+			slaw::abs(a[4]),   slaw::abs(a[5]),
+			slaw::abs(a[6]),   slaw::abs(a[7]),
+			slaw::abs(a[8]),   slaw::abs(a[9]),
+			slaw::abs(a[10]),  slaw::abs(a[11]),
+			slaw::abs(a[12]),  slaw::abs(a[13]),
+			slaw::abs(a[14]),  slaw::abs(a[15])
+		};
+	}
+
+	if constexpr (simd_vector_size<T>() == 8)
+	{
+		return {
+			slaw::abs(a[0]), slaw::abs(a[1]),
+			slaw::abs(a[2]), slaw::abs(a[3]),
+			slaw::abs(a[4]), slaw::abs(a[5]),
+			slaw::abs(a[6]), slaw::abs(a[7])
+		};
+	}
+
+	if constexpr (simd_vector_size<T>() == 4)
+	{
+		return {
+			slaw::abs(a[0]), slaw::abs(a[1]),
+			slaw::abs(a[2]), slaw::abs(a[3])
+		};
+	}
+
+	if constexpr (simd_vector_size<T>() == 2)
+	{
+		return {
+			slaw::abs(a[0]), slaw::abs(a[1])
+		};
+	}
+}
+
+/**
+ * Performs an element-wise negation operation on a SIMD vector.
+ * The output of each element is the corresponding element of the input
+ * vector multiplied by -1.
+ */
+template <typename T>
+constexpr T
+neg(const T &a)
+{
+	static_assert(simd_vector_size<T>() != 0,
+		"Type is not a SIMD vector type.");
+
+	if constexpr (simd_vector_size<T>() == 16)
+	{
+		return {
+			-a[0],  -a[1],  -a[2],  -a[3],
+			-a[4],  -a[5],  -a[6],  -a[7],
+			-a[8],  -a[9],  -a[10], -a[11],
+			-a[12], -a[13], -a[14], -a[15]
+		};
+	}
+
+	if constexpr (simd_vector_size<T>() == 8)
+	{
+		return {
+			-a[0], -a[1], -a[2], -a[3],
+			-a[4], -a[5], -a[6], -a[7]
+		};
+	}
+
+	if constexpr (simd_vector_size<T>() == 4)
+	{
+		return { -a[0], -a[1], -a[2], -a[3] };
+	}
+
+	if constexpr (simd_vector_size<T>() == 2)
+	{
+		return { -a[0], -a[1] };
+	}
+}
+
+
+/**
  * Performs an element-wise miniumum operation on two SIMD vectors.
  * The output of each element is the minimum of the corresponding
  * elements of the two input vectors.
