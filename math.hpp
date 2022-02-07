@@ -189,33 +189,15 @@ ceil(T x)
 /**
  * Rounds the given number to the nearest integer.
  * .50000... and above is rounded up, .49999... and below is rounded down.
+ * TODO: For some reason, this doesn't compile down into a single `f32.nearest`
+ * or `f64.nearest` instruction. This should be fixed.
  */
 template <typename T>
 constexpr T
 round(T x)
 {
 	static_assert(is_float<T>(), "Type is not a floating point type.");
-
-	// If the function is being evaluated at compile time,
-	// we round the number manually.
-
-	if (__builtin_is_constant_evaluated())
-	{
-		return (i64) floor(x + 0.5);
-	}
-
-	// If the function is not evaluated at compile time,
-	// we use the round builtins.
-
-	if constexpr (is_same<T, f32>())
-	{
-		return __builtin_roundf(x);
-	}
-
-	if constexpr (is_same<T, f64>())
-	{
-		return __builtin_round(x);
-	}
+	return (i64) floor(x + 0.5);
 }
 
 /**
@@ -558,6 +540,20 @@ sqrt(f64 n)
 	// we have all of this code above.
 
 	return __builtin_sqrt(n);
+}
+
+/**
+ * Returns the square root of a number.
+ */
+constexpr f32
+sqrt(f32 n)
+{
+	if (__builtin_is_constant_evaluated())
+	{
+		return sqrt((f64) n);
+	}
+
+	return __builtin_sqrtf(n);
 }
 
 /**
