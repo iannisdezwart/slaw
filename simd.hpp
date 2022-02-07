@@ -3,13 +3,18 @@
 
 #include "types.hpp"
 #include "math.hpp"
+#include "util.hpp"
 
 // Below are the SIMD types that are supported by WebAssembly.
 
 typedef i8 i8x16 __attribute__((__vector_size__(16)));
+typedef u8 u8x16 __attribute__((__vector_size__(16)));
 typedef i16 i16x8 __attribute__((__vector_size__(16)));
+typedef u16 u16x8 __attribute__((__vector_size__(16)));
 typedef i32 i32x4 __attribute__((__vector_size__(16)));
+typedef u32 u32x4 __attribute__((__vector_size__(16)));
 typedef i64 i64x2 __attribute__((__vector_size__(16)));
+typedef u64 u64x2 __attribute__((__vector_size__(16)));
 
 typedef f32 f32x4 __attribute__((__vector_size__(16)));
 typedef f64 f64x2 __attribute__((__vector_size__(16)));
@@ -67,161 +72,60 @@ simd_vector_size()
 
 namespace simd
 {
-
+namespace detail
+{
 /**
  * A compile-time structure that holds the 128-bit SIMD vector type that
  * corresponds to a given type.
  */
 template <typename T>
-struct simd_vector_of {};
+struct simd_vector_of_impl {};
 
-template <> struct simd_vector_of<i8> { using type = i8x16; };
-template <> struct simd_vector_of<i16> { using type = i16x8; };
-template <> struct simd_vector_of<i32> { using type = i32x4; };
-template <> struct simd_vector_of<i64> { using type = i64x2; };
-template <> struct simd_vector_of<f32> { using type = f32x4; };
-template <> struct simd_vector_of<f64> { using type = f64x2; };
+template <> struct simd_vector_of_impl<i8> { using type = i8x16; };
+template <> struct simd_vector_of_impl<i16> { using type = i16x8; };
+template <> struct simd_vector_of_impl<i32> { using type = i32x4; };
+template <> struct simd_vector_of_impl<i64> { using type = i64x2; };
+template <> struct simd_vector_of_impl<f32> { using type = f32x4; };
+template <> struct simd_vector_of_impl<f64> { using type = f64x2; };
 
 /**
  * A compile-time structure that holds the element type of a given SIMD
  * vector type.
  */
 template <typename T>
-struct simd_element_type_of {};
+struct simd_element_type_of_impl {};
 
-template <> struct simd_element_type_of<i8x16> { using type = i8; };
-template <> struct simd_element_type_of<i16x8> { using type = i16; };
-template <> struct simd_element_type_of<i32x4> { using type = i32; };
-template <> struct simd_element_type_of<i64x2> { using type = i64; };
-template <> struct simd_element_type_of<f32x4> { using type = f32; };
-template <> struct simd_element_type_of<f64x2> { using type = f64; };
+template <> struct simd_element_type_of_impl<i8x16> { using type = i8; };
+template <> struct simd_element_type_of_impl<i16x8> { using type = i16; };
+template <> struct simd_element_type_of_impl<i32x4> { using type = i32; };
+template <> struct simd_element_type_of_impl<i64x2> { using type = i64; };
+template <> struct simd_element_type_of_impl<f32x4> { using type = f32; };
+template <> struct simd_element_type_of_impl<f64x2> { using type = f64; };
+}; // namespace detail
 
 /**
- * Performs an element-wise maximum operation on two SIMD vectors.
- * The output of each element is the maximum of the corresponding
- * elements of the two input vectors.
+ * A compile-time macro that resolves into the 128-bit SIMD vector type that
+ * corresponds to a given type.
+ */
+template <typename T>
+using simd_vector_of = typename detail::simd_vector_of_impl<T>::type;
+
+/**
+ * A compile-time macro that resolves into the element type of a given SIMD
+ * vector type.
+ */
+template <typename T>
+using simd_element_type_of =
+	typename detail::simd_element_type_of_impl<T>::type;
+
+/**
+ * Performs an element-wise user specified operation on an SIMD vector.
+ * Each element goes through the user specified operation and the result
+ * is stored in the output vector.
  */
 template <typename T>
 constexpr T
-max(const T &a, const T &b)
-{
-	static_assert(simd_vector_size<T>() != 0,
-		"Type is not a SIMD vector type.");
-
-	// We can't use `__builtin_elementwise_ax` because it isn't fully
-	// supported in recent versions of clang, and it won't work at
-	// compile-time. We will do a dumb hard-coded maximum operation
-	// on each element instead. This will be optimised down to a single
-	// vector instruction by the compiler.
-	// https://godbolt.org/z/4zrzs573E
-
-	if constexpr (simd_vector_size<T>() == 16)
-	{
-		return {
-			slaw::max(a[0], b[0]),   slaw::max(a[1], b[1]),
-			slaw::max(a[2], b[2]),   slaw::max(a[3], b[3]),
-			slaw::max(a[4], b[4]),   slaw::max(a[5], b[5]),
-			slaw::max(a[6], b[6]),   slaw::max(a[7], b[7]),
-			slaw::max(a[8], b[8]),   slaw::max(a[9], b[9]),
-			slaw::max(a[10], b[10]), slaw::max(a[11], b[11]),
-			slaw::max(a[12], b[12]), slaw::max(a[13], b[13]),
-			slaw::max(a[14], b[14]), slaw::max(a[15], b[15])
-		};
-	}
-
-	if constexpr (simd_vector_size<T>() == 8)
-	{
-		return {
-			slaw::max(a[0], b[0]), slaw::max(a[1], b[1]),
-			slaw::max(a[2], b[2]), slaw::max(a[3], b[3]),
-			slaw::max(a[4], b[4]), slaw::max(a[5], b[5]),
-			slaw::max(a[6], b[6]), slaw::max(a[7], b[7])
-		};
-	}
-
-	if constexpr (simd_vector_size<T>() == 4)
-	{
-		return {
-			slaw::max(a[0], b[0]), slaw::max(a[1], b[1]),
-			slaw::max(a[2], b[2]), slaw::max(a[3], b[3])
-		};
-	}
-
-	if constexpr (simd_vector_size<T>() == 2)
-	{
-		return {
-			slaw::max(a[0], b[0]), slaw::max(a[1], b[1])
-		};
-	}
-}
-
-/**
- * Performs an element-wise absolute value operation on a SIMD vector.
- * The output of each element is the absolute value of the corresponding
- * element of the input vector.
- */
-template <typename T>
-constexpr T
-abs(const T &a)
-{
-	static_assert(simd_vector_size<T>() != 0,
-		"Type is not a SIMD vector type.");
-
-	// We can't use `__builtin_elementwise_abs` because it isn't fully
-	// supported in recent versions of clang, and it won't work at
-	// compile-time. We will do a dumb hard-coded absolute value
-	// operation on each element instead. This will be optimised down
-	// to a single vector instruction by the compiler.
-	// https://godbolt.org/z/4zrzs573E
-
-	if constexpr (simd_vector_size<T>() == 16)
-	{
-		return {
-			slaw::abs(a[0]),   slaw::abs(a[1]),
-			slaw::abs(a[2]),   slaw::abs(a[3]),
-			slaw::abs(a[4]),   slaw::abs(a[5]),
-			slaw::abs(a[6]),   slaw::abs(a[7]),
-			slaw::abs(a[8]),   slaw::abs(a[9]),
-			slaw::abs(a[10]),  slaw::abs(a[11]),
-			slaw::abs(a[12]),  slaw::abs(a[13]),
-			slaw::abs(a[14]),  slaw::abs(a[15])
-		};
-	}
-
-	if constexpr (simd_vector_size<T>() == 8)
-	{
-		return {
-			slaw::abs(a[0]), slaw::abs(a[1]),
-			slaw::abs(a[2]), slaw::abs(a[3]),
-			slaw::abs(a[4]), slaw::abs(a[5]),
-			slaw::abs(a[6]), slaw::abs(a[7])
-		};
-	}
-
-	if constexpr (simd_vector_size<T>() == 4)
-	{
-		return {
-			slaw::abs(a[0]), slaw::abs(a[1]),
-			slaw::abs(a[2]), slaw::abs(a[3])
-		};
-	}
-
-	if constexpr (simd_vector_size<T>() == 2)
-	{
-		return {
-			slaw::abs(a[0]), slaw::abs(a[1])
-		};
-	}
-}
-
-/**
- * Performs an element-wise negation operation on a SIMD vector.
- * The output of each element is the corresponding element of the input
- * vector multiplied by -1.
- */
-template <typename T>
-constexpr T
-neg(const T &a)
+each(const T &v, simd_element_type_of<T> (*op)(simd_element_type_of<T>))
 {
 	static_assert(simd_vector_size<T>() != 0,
 		"Type is not a SIMD vector type.");
@@ -229,32 +133,82 @@ neg(const T &a)
 	if constexpr (simd_vector_size<T>() == 16)
 	{
 		return {
-			-a[0],  -a[1],  -a[2],  -a[3],
-			-a[4],  -a[5],  -a[6],  -a[7],
-			-a[8],  -a[9],  -a[10], -a[11],
-			-a[12], -a[13], -a[14], -a[15]
+			op(v[0]),  op(v[1]),  op(v[2]),  op(v[3]),
+			op(v[4]),  op(v[5]),  op(v[6]),  op(v[7]),
+			op(v[8]),  op(v[9]),  op(v[10]), op(v[11]),
+			op(v[12]), op(v[13]), op(v[14]), op(v[15])
 		};
 	}
 
 	if constexpr (simd_vector_size<T>() == 8)
 	{
 		return {
-			-a[0], -a[1], -a[2], -a[3],
-			-a[4], -a[5], -a[6], -a[7]
+			op(v[0]), op(v[1]), op(v[2]), op(v[3]),
+			op(v[4]), op(v[5]), op(v[6]), op(v[7])
 		};
 	}
 
 	if constexpr (simd_vector_size<T>() == 4)
 	{
-		return { -a[0], -a[1], -a[2], -a[3] };
+		return { op(v[0]), op(v[1]), op(v[2]), op(v[3]) };
 	}
 
 	if constexpr (simd_vector_size<T>() == 2)
 	{
-		return { -a[0], -a[1] };
+		return { op(v[0]), op(v[1]) };
 	}
 }
 
+/**
+ * Performs an element-wise user specified operation on two SIMD vectors.
+ * All corresponding elements go through the user specified operation and
+ * the result is stored in the output vector.
+ */
+template <typename T>
+constexpr T
+each(const T &a, const T &b, simd_element_type_of<T> (*op)(
+	simd_element_type_of<T>, simd_element_type_of<T>))
+{
+	static_assert(simd_vector_size<T>() != 0,
+		"Type is not a SIMD vector type.");
+
+	if constexpr (simd_vector_size<T>() == 16)
+	{
+		return {
+			op(a[0],  b[0]),  op(a[1],  b[1]),
+			op(a[2],  b[2]),  op(a[3],  b[3]),
+			op(a[4],  b[4]),  op(a[5],  b[5]),
+			op(a[6],  b[6]),  op(a[7],  b[7]),
+			op(a[8],  b[8]),  op(a[9],  b[9]),
+			op(a[10], b[10]), op(a[11], b[11]),
+			op(a[12], b[12]), op(a[13], b[13]),
+			op(a[14], b[14]), op(a[15], b[15])
+		};
+	}
+
+	if constexpr (simd_vector_size<T>() == 8)
+	{
+		return {
+			op(a[0], b[0]), op(a[1], b[1]),
+			op(a[2], b[2]), op(a[3], b[3]),
+			op(a[4], b[4]), op(a[5], b[5]),
+			op(a[6], b[6]), op(a[7], b[7])
+		};
+	}
+
+	if constexpr (simd_vector_size<T>() == 4)
+	{
+		return {
+			op(a[0], b[0]), op(a[1], b[1]),
+			op(a[2], b[2]), op(a[3], b[3])
+		};
+	}
+
+	if constexpr (simd_vector_size<T>() == 2)
+	{
+		return { op(a[0], b[0]), op(a[1], b[1]) };
+	}
+}
 
 /**
  * Performs an element-wise miniumum operation on two SIMD vectors.
@@ -265,54 +219,85 @@ template <typename T>
 constexpr T
 min(const T &a, const T &b)
 {
-	static_assert(simd_vector_size<T>() != 0,
-		"Type is not a SIMD vector type.");
+	return each(a, b, slaw::min);
+}
 
-	// We can't use `__builtin_elementwise_min` because it isn't fully
-	// supported in recent versions of clang, and it won't work at
-	// compile-time. We will do a dumb hard-coded miniumum operation
-	// on each element instead. This will be optimised down to a single
-	// vector instruction by the compiler.
-	// https://godbolt.org/z/q6snrf5P9
+/**
+ * Performs an element-wise maximum operation on two SIMD vectors.
+ * The output of each element is the maximum of the corresponding
+ * elements of the two input vectors.
+ */
+template <typename T>
+constexpr T
+max(const T &a, const T &b)
+{
+	return each(a, b, slaw::max);
+}
 
-	if constexpr (simd_vector_size<T>() == 16)
-	{
-		return {
-			slaw::min(a[0], b[0]),   slaw::min(a[1], b[1]),
-			slaw::min(a[2], b[2]),   slaw::min(a[3], b[3]),
-			slaw::min(a[4], b[4]),   slaw::min(a[5], b[5]),
-			slaw::min(a[6], b[6]),   slaw::min(a[7], b[7]),
-			slaw::min(a[8], b[8]),   slaw::min(a[9], b[9]),
-			slaw::min(a[10], b[10]), slaw::min(a[11], b[11]),
-			slaw::min(a[12], b[12]), slaw::min(a[13], b[13]),
-			slaw::min(a[14], b[14]), slaw::min(a[15], b[15])
-		};
-	}
+/**
+ * Performs an element-wise absolute value operation on a SIMD vector.
+ * The output of each element is the absolute value of the corresponding
+ * element of the input vector.
+ */
+template <typename T>
+constexpr T
+abs(const T &v)
+{
+	return each(v, slaw::abs);
+}
 
-	if constexpr (simd_vector_size<T>() == 8)
-	{
-		return {
-			slaw::min(a[0], b[0]), slaw::min(a[1], b[1]),
-			slaw::min(a[2], b[2]), slaw::min(a[3], b[3]),
-			slaw::min(a[4], b[4]), slaw::min(a[5], b[5]),
-			slaw::min(a[6], b[6]), slaw::min(a[7], b[7])
-		};
-	}
+/**
+ * Performs an element-wise negation operation on a SIMD vector.
+ * The output of each element is the corresponding element of the input
+ * vector multiplied by -1.
+ */
+template <typename T>
+constexpr T
+neg(const T &v)
+{
+	return each(v, [](T n) { return -n; });
+}
 
-	if constexpr (simd_vector_size<T>() == 4)
-	{
-		return {
-			slaw::min(a[0], b[0]), slaw::min(a[1], b[1]),
-			slaw::min(a[2], b[2]), slaw::min(a[3], b[3])
-		};
-	}
+/**
+ * Performs an element-wise rounding operation on a SIMD vector.
+ * Each element is rounded to the nearest integer.
+ */
+template <typename T>
+constexpr T
+round(const T &v)
+{
+	static_assert(is_float<simd_element_type_of<T>>(),
+		"SIMD vector does not hold floating-point types.");
 
-	if constexpr (simd_vector_size<T>() == 2)
-	{
-		return {
-			slaw::min(a[0], b[0]), slaw::min(a[1], b[1])
-		};
-	}
+	return each(v, slaw::round);
+}
+
+/**
+ * Performs an element-wise ceiling operation on a SIMD vector.
+ * Each element is rounded up to the nearest integer.
+ */
+template <typename T>
+constexpr T
+ceil(const T &v)
+{
+	static_assert(is_float<simd_element_type_of<T>>(),
+		"SIMD vector does not hold floating-point types.");
+
+	return each(v, slaw::ceil);
+}
+
+/**
+ * Performs an element-wise floor operation on a SIMD vector.
+ * Each element is rounded down to the nearest integer.
+ */
+template <typename T>
+constexpr T
+floor(const T &v)
+{
+	static_assert(is_float<simd_element_type_of<T>>(),
+		"SIMD vector does not hold floating-point types.");
+
+	return each(v, slaw::floor);
 }
 
 /**
