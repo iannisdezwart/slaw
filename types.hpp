@@ -101,37 +101,37 @@ is_float()
 }
 
 /**
- * A compile-time function that returns true if the type is signed.
- * Throws a compile-time error if the type is not a valid integer type.
+ * A compile-time function that returns true if the type is a signed integer.
+ * Any other type returns false.
  */
 template <typename T>
 constexpr bool
-is_signed()
+is_signed_integer()
 {
-	static_assert(is_integer<T>(), "Type is not an integer.");
-
-	if constexpr (is_same<T, u8>() || is_same<T, u16>()
-		|| is_same<T, u32>() || is_same<T, u64>())
-	{
-		return false;
-	}
-
 	if constexpr (is_same<T, i8>() || is_same<T, i16>()
 		|| is_same<T, i32>() || is_same<T, i64>())
 	{
 		return true;
 	}
+
+	return false;
 }
 
 /**
- * A compile-time function that returns true if the type is unsigned.
- * Throws a compile-time error if the type is not a valid integer type.
+ * A compile-time function that returns true if the type is an unsigned integer.
+ * Any other type returns false.
  */
 template <typename T>
 constexpr bool
-is_unsigned()
+is_unsigned_integer()
 {
-	return !is_signed<T>();
+	if constexpr (is_same<T, u8>() || is_same<T, u16>()
+		|| is_same<T, u32>() || is_same<T, u64>())
+	{
+		return true;
+	}
+
+	return false;
 }
 
 /**
